@@ -1,0 +1,2 @@
+C:\msys64\ucrt64\bin\ar.exe qc libSVTL.a CMakeFiles/SVTL.dir/src/svtl.c.obj CMakeFiles/SVTL.dir/src/cthreads.c.obj
+C:\msys64\ucrt64\bin\ranlib.exe libSVTL.a

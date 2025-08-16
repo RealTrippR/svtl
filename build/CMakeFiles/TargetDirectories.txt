@@ -1,0 +1,3 @@
+C:/Users/TrippR/OneDrive/Documents/REPOS/Tripp's-Simple-Vertex-Transformation-Library/svtl/build/CMakeFiles/SVTL.dir
+C:/Users/TrippR/OneDrive/Documents/REPOS/Tripp's-Simple-Vertex-Transformation-Library/svtl/build/CMakeFiles/edit_cache.dir
+C:/Users/TrippR/OneDrive/Documents/REPOS/Tripp's-Simple-Vertex-Transformation-Library/svtl/build/CMakeFiles/rebuild_cache.dir
