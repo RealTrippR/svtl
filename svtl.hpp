@@ -46,12 +46,10 @@ namespace svtl
         double z;
     };
 
-    enum PositionType
+    enum class POSITION_TYPE
     {
-        SVTL_POS_TYPE_VEC2_F32,
-        SVTL_POS_TYPE_VEC3_F32,
-        SVTL_POS_TYPE_VEC2_F64,
-        SVTL_POS_TYPE_VEC3_F64
+        Vec2F32,
+        Vec2F64,
     };
 
     struct VertexInfo
@@ -59,7 +57,7 @@ namespace svtl
         uint32_t stride;
         uint32_t count;
         void* vertices;
-        enum SVTL_PositionType positionType;
+        enum POSITION_TYPE positionType;
         uint32_t positionOffset;
     };
     /*
