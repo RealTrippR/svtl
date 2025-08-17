@@ -63,9 +63,7 @@ struct SVTL_F64Vec3
 enum SVTL_PositionType
 {
     SVTL_POS_TYPE_VEC2_F32,
-    SVTL_POS_TYPE_VEC3_F32,
     SVTL_POS_TYPE_VEC2_F64,
-    SVTL_POS_TYPE_VEC3_F64
 };
 
 struct SVTL_VertexInfo
@@ -117,17 +115,32 @@ SVTL_API errno_t SVTL_scale2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64V
 /// @return errno_t - error code: 0 on success, -1 upon failure */
 SVTL_API errno_t SVTL_skew2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 skewFactor, struct SVTL_F64Vec2 origin);
 
-
 /*
 /// Returns the signed area of a simple closed polygon.
 /// @param SVTL_VertexInfo* vi - vertex info
-/// @return double - the signed area of the polygon. */
+/// @return double - the signed area of the polygon */
 SVTL_API double SVTL_findSignedArea(const struct SVTL_VertexInfo* vi);
 
 /*
 /// Returns the centroid of a simple closed polygon.
 /// @param SVTL_VertexInfo* vi - vertex info
-/// @return SVTL_F64Vec2 - the centroid of the polygon. */
+/// @return SVTL_F64Vec2 - the centroid of the polygon */
 SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfo* vi);
+
+/*
+/// Extracts the positions of the given vertices and stores them in an array with a size of (vi.count * sizeof(SVTL_F64Vec2))
+/// @param SVTL_VertexInfo* vi - vertex info
+/// @param SVTL_F64Vec2* positionsOut - the buffer to store the positions*/
+/// @return errno_t - error code: 0 on success, -1 upon failure */
+SVTL_API errno_t SVTL_ExtractVertexPositions2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2* positionsOut);
+
+/*
+/// Extracts the positions of the given vertices and stores them in an array with a size of (vi.count * sizeof(SVTL_F64Vec2))
+/// Identical to SVTL_ExtractVertexPositions2D, except it checks to ensure that the buffer length is of the correct size.
+/// @param SVTL_VertexInfo* vi - vertex info
+/// @param SVTL_F64Vec2* positionsOut - the buffer to store the positions
+/// @param uint64_t posBuffSize - the size of the buffer to store the positions in bytes
+/// @return errno_t - error code: 0 on success, -1 upon failure */
+SVTL_API errno_t SVTL_ExtractVertexPositions2D_s(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2* positionsOut, uint64_t posBuffSize);
 
 #endif /*SVTL_H*/

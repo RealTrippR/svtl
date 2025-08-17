@@ -413,7 +413,6 @@ SVTL_API errno_t SVTL_skew2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Ve
     free(dataList);
     free(argList);
     return 0;
-    return 0;
 }
 
 SVTL_API f64 SVTL_findSignedArea(const struct SVTL_VertexInfo* vi)
@@ -423,11 +422,22 @@ SVTL_API f64 SVTL_findSignedArea(const struct SVTL_VertexInfo* vi)
     f64 area = 0.0;
 
     u32 i = 0;
-    for (; i < vi->count; ++i)
+    if (vi->positionType == SVTL_POS_TYPE_VEC2_F32) {
+        for (; i < vi->count; ++i)
+        {
+            struct SVTL_F32Vec2* pos = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
+            struct SVTL_F32Vec2* posNext = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * ((i + 1) % vi->count)) + vi->positionOffset);
+            area +=  (pos->x * posNext->y - posNext->x * pos->y);
+        }
+    }
+    else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
     {
-        struct SVTL_F32Vec2* pos = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
-        struct SVTL_F32Vec2* posNext = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * ((i + 1) % vi->count)) + vi->positionOffset);
-        area +=  (pos->x * posNext->y - posNext->x * pos->y);
+         for (; i < vi->count; ++i)
+        {
+            struct SVTL_F64Vec2* pos = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
+            struct SVTL_F64Vec2* posNext = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * ((i + 1) % vi->count)) + vi->positionOffset);
+            area +=  (pos->x * posNext->y - posNext->x * pos->y);
+        }
     }
 
     area *= 0.5;
@@ -445,17 +455,109 @@ SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfo* v
     f64 sumX=0.0;
     f64 sumY=0.0;
     u32 i = 0;
-    for (; i < vi->count; ++i)
-    {
-        struct SVTL_F32Vec2* pos = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
-        struct SVTL_F32Vec2* posNext = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * ((i+1) % vi->count)) + vi->positionOffset);
-        sumX += (pos->x + posNext->x) * (pos->x*posNext->y - posNext->x*pos->y);
-        sumY += (pos->y + posNext->y) * (pos->x * posNext->y - posNext->x * pos->y);
+    if (vi->positionType == SVTL_POS_TYPE_VEC2_F32)
+     {
+        for (; i < vi->count; ++i)
+        {
+            struct SVTL_F32Vec2* pos = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
+            struct SVTL_F32Vec2* posNext = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * ((i+1) % vi->count)) + vi->positionOffset);
+            sumX += (pos->x + posNext->x) * (pos->x*posNext->y - posNext->x*pos->y);
+            sumY += (pos->y + posNext->y) * (pos->x * posNext->y - posNext->x * pos->y);
+        }
     }
-    
+    else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
+    {
+        for (; i < vi->count; ++i)
+        {
+            struct SVTL_F64Vec2* pos = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
+            struct SVTL_F64Vec2* posNext = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * ((i+1) % vi->count)) + vi->positionOffset);
+            sumX += (pos->x + posNext->x) * (pos->x*posNext->y - posNext->x*pos->y);
+            sumY += (pos->y + posNext->y) * (pos->x * posNext->y - posNext->x * pos->y);
+        }
+    }
+        
   
     struct SVTL_F64Vec2 retV;
     retV.x = (1.0 / (6.0*a)) * sumX;
     retV.y = (1.0 / (6.0*a)) * sumY;
     return retV;
+}
+
+struct SVTL_ExtractVertexPositions2D_Args {
+    const struct SVTL_VertexInfo* vi; struct SVTL_F64Vec2* positionsOut; u32 firstVertexIndex; u32 vertexCount;
+};
+
+SVTL_API void* SVTL_ExtractVertexPositions2D_ThreadSegment(void* args__) 
+{
+    struct SVTL_ExtractVertexPositions2D_Args* args = args__;
+    struct SVTL_VertexInfo* vi = args->vi;
+    void* vertices = vi->vertices;
+    struct SVTL_F64Vec2* positionsOut = args->positionsOut;
+
+    u32 i = 0;
+    if (vi->positionType == SVTL_POS_TYPE_VEC2_F32) 
+    {
+        for (; i < vi->count; ++i)
+        {
+            struct SVTL_F32Vec2* pos = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
+            positionsOut[i].x = pos->x;
+            positionsOut[i].x = pos->y;
+        }
+    }
+    else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
+    {
+        for (; i < vi->count; ++i)
+        {
+            struct SVTL_F64Vec2* pos = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
+            positionsOut[i].x = pos->x;
+            positionsOut[i].x = pos->y;
+        }
+    }
+
+    return NULL;
+}
+
+SVTL_API errno_t SVTL_ExtractVertexPositions2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2* positionsOut)
+{
+    struct SVTL_ExtractVertexPositions2D_Args* dataList = malloc(sizeof(struct SVTL_ExtractVertexPositions2D_Args) * instance.threadCount);
+    struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
+    if (!dataList || !argList) {
+        return -1;
+    }
+
+    u8 i;
+    for (i = 0; i < instance.threadCount; ++i)
+    {
+        struct cthreads_args* args = argList + i;
+        struct SVTL_ExtractVertexPositions2D_Args* fData = &dataList[i];
+        fData->vi = vi;
+        fData->positionsOut = positionsOut;
+        fData->firstVertexIndex = i * (vi->count + 1) / instance.threadCount;
+        fData->vertexCount = getSegmentSize(vi->count, instance.threadCount, i);
+        args->data = fData;
+        args->func = SVTL_skew2D_ThreadSegment;
+        cthreads_thread_create(instance.threads + i, NULL, args->func, args->data, args);
+    }
+
+    for (i = 0; i < instance.threadCount; ++i)
+    {
+        int exitCode = 0;
+        cthreads_thread_join(instance.threads[i], &exitCode);
+        if (exitCode != 0) {
+            free(dataList);
+            free(argList);
+            return -1;
+        }
+    }
+
+    free(dataList);
+    free(argList);
+    return 0;
+}
+
+SVTL_API errno_t SVTL_ExtractVertexPositions2D_s(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2* positionsOut, uint64_t posBuffSize)
+{
+    if (posBuffSize < vi->count*sizeof(struct SVTL_F64Vec2))
+        return -1;
+    return SVTL_ExtractVertexPositions2D(vi, positionsOut);
 }
