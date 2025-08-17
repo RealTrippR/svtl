@@ -16,6 +16,63 @@ SVTL is a basic vertex transformation library written in C89. It provides a hand
 ```SVTL_ExtractVertexPositions2D``` - writes vertex positions to a buffer </br>
 ```SVTL_ExtractVertexPositions2D_s``` - writes vertex positions to a bounds checked buffer </br>
 
+<ins> **Example** </ins>
+```
+#include <svtl.h>
+
+struct Vertex2D {
+	float x;
+	float y;
+
+	float r;
+	float g;
+	float b;
+};
+
+int main()
+{
+	SVTL_Init();
+
+	struct Vertex2D vertices[4] = { {0,0}, {1,0}, {1,1}, {0,1} };
+
+	struct SVTL_VertexInfo vi;
+	vi.count = sizeof(vertices)/sizeof(vertices[0]);
+	vi.stride = sizeof(struct Vertex2D);
+	vi.positionOffset = 0u;
+	vi.positionType = SVTL_POS_TYPE_VEC2_F32;
+	vi.vertices = vertices;
+
+	struct SVTL_F64Vec2 v = { 0, 1 };
+	struct SVTL_F64Vec2 v2 = { 0, 1 };
+
+	SVTL_translate2D(&vi, v);
+
+	v.x = 0.f;
+	v.y = 0.f;
+	v2.x = 2.f;
+	v2.y = 2.f;
+	SVTL_scale2D(&vi, v2, v);
+
+	v.x = 0;
+	v.y = 0;
+
+	SVTL_rotate2D(&vi, 3.141592653589, v);
+	SVTL_rotate2D(&vi, -3.141592653589, v);
+
+
+
+	v.x = 1.f;
+	v.y = 0.f;
+	v2.x = 1.f;
+	v2.y = 3.f;
+	SVTL_skew2D(&vi, v, v2);
+	
+	struct SVTL_F64Vec2 vc = SVTL_findCentroid2D(&vi);
+
+	SVTL_Terminate();
+}
+```
+
 <ins> **Performance** </ins>
 
 <ins> **Naming Conventions** </ins>
