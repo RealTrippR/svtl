@@ -5,7 +5,7 @@ SVTL is a basic vertex transformation library written in C89. It provides a hand
 
 <ins> Functions </ins>
 
-```SVTL_Init``` - Initializes SVTL
+```SVTL_Init``` - Initializes SVTL </br>
 ```SVTL_Terminate``` - Terminates SVTL
 
 ```SVTL_translate2D``` - translates by a given displacement
