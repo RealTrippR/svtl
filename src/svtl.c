@@ -38,12 +38,14 @@ struct SVTL_Instance {
     u16 threadCount;
 };
 
-struct SVTL_Instance instance;
+struct SVTL_Instance instance = {NULL, 0};
 
 
 
 errno_t SVTL_createInstance(struct SVTL_Instance* instance)
 {
+    if (instance->threads)
+        return 0;
     instance->threadCount = SVTL_DEFAULT_THREAD_COUNT;
     instance->threads = malloc(instance->threadCount * sizeof(instance->threads[0]));
     if (!instance->threads)
@@ -61,7 +63,7 @@ void SVTL_destroyInstance(struct SVTL_Instance* instance)
     instance->threadCount = 0u;
 }
 
-SVTL_API errno_t SVTL_Init(void)
+SVTL_API errno_t  (void)
 {
     return SVTL_createInstance(&instance);
 }
