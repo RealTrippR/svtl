@@ -19,16 +19,30 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 #ifndef SVTL_H
 #define SVTL_H
 
-#ifdef SVTL_DYNAMIC
-#ifdef SVTL_SHARED_EXPORTS
-#define SVTL_API __declspec(dllexport)
-#else
-#define SVTL_API __declspec(dllimport)
-#endif
-#else
-#define SVTL_API
-#endif /* !SVTL_DYNAMIC */
+#ifndef SVTL_API
+    #ifdef SVTL_DYNAMIC
 
+        #ifdef SVTL_SHARED_EXPORTS
+            #define SVTL_API __declspec(dllexport)
+        #else
+            #define SVTL_API __declspec(dllimport)
+        #endif
+
+    #else
+        #define SVTL_API
+    #endif /* !SVTL_DYNAMIC */
+
+    #ifdef __cplusplus 
+        #define SVTL_API extern "C"
+
+        #ifdef SVTL_SHARED_EXPORTS
+            #define SVTL_API extern "C" __declspec(dllexport)
+        #else
+            #define SVTL_API extern "C" __declspec(dllimport)
+        #endif
+
+    #endif
+#endif
 
 #include <errno.h>
 #include <stdint.h>

@@ -21,6 +21,7 @@ target_include_directories(SVTL_SHARED PUBLIC
     ${PROJECT_SOURCE_DIR}
 )
 
+# add shared macro
 target_compile_definitions(SVTL_SHARED PUBLIC
     SVTL_DYNAMIC
 )
@@ -56,26 +57,49 @@ else()
     )
 endif()
 
-# Set compiler flags
-target_compile_options(common INTERFACE
-    -std=c89
-    -O3
-    -DNDEBUG
-    -msse4.2
-    -march=native
-    -funroll-loops
-    -fpeel-loops
-    -fpredictive-commoning
-    -frename-registers
-    -ffast-math
-    -flto
-    -Wall
+
+if (MSVC)
+    target_compile_options(common INTERFACE
+        /std:c11
+    )
+    target_compile_options(common INTERFACE
+        $<$<NOT:$<CONFIG:Debug>>:/O2>
+        $<$<NOT:$<CONFIG:Debug>>:/DNDEBUG>
+    )
+else()
+    target_compile_options(common INTERFACE
+        $<$<NOT:$<CONFIG:Debug>>:-DNDEBUG>
+    )
+    # Set compiler flags
+    target_compile_options(common INTERFACE
+        -std=c89
+        -O3
+        -DNDEBUG
+        -msse4.2
+        -march=native
+        -funroll-loops
+        -fpeel-loops
+        -fpredictive-commoning
+        -frename-registers
+        -ffast-math
+        -flto
+        -Wall
+    )
+endif()
+
+
+set_target_properties(SVTL_SHARED PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-target_link_options(common INTERFACE
-    -flto
-)
 
+set_target_properties(SVTL_STATIC PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
 
 target_link_libraries(SVTL_SHARED PRIVATE common)
 target_link_libraries(SVTL_STATIC PRIVATE common)

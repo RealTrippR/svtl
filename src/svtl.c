@@ -42,25 +42,25 @@ struct SVTL_Instance instance = {NULL, 0};
 
 
 
-errno_t SVTL_createInstance(struct SVTL_Instance* instance)
+static errno_t SVTL_createInstance(struct SVTL_Instance* _instance)
 {
-    if (instance->threads)
+    if (_instance->threads)
         return 0;
-    instance->threadCount = SVTL_DEFAULT_THREAD_COUNT;
-    instance->threads = malloc(instance->threadCount * sizeof(instance->threads[0]));
-    if (!instance->threads)
+    _instance->threadCount = SVTL_DEFAULT_THREAD_COUNT;
+    _instance->threads = malloc(_instance->threadCount * sizeof(_instance->threads[0]));
+    if (!_instance->threads)
         return -1;
     
     return 0u;
 }
 
-void SVTL_destroyInstance(struct SVTL_Instance* instance)
+static void SVTL_destroyInstance(struct SVTL_Instance* _instance)
 {
-    if (instance->threads)
-        free(instance->threads);
+    if (_instance->threads)
+        free(_instance->threads);
 
-    instance->threads = NULL;
-    instance->threadCount = 0u;
+    _instance->threads = NULL;
+    _instance->threadCount = 0u;
 }
 
 SVTL_API errno_t SVTL_Init(void)
@@ -112,10 +112,10 @@ void* SVTL_translate2D_ThreadSegment(void *v)
 static u32 getSegmentSize(u32 count, u32 divisions, u32 divisionIdx)
 {
 
-    long i = divisionIdx;
-    long j = (count + 1) / divisions;
-    long k = count - (i + 1) * j;
-    if (i == divisions - 1)
+    i32 i = divisionIdx;
+    i32 j = (count + 1) / divisions;
+    i32 k = count - (i + 1) * j;
+    if (i == (i32)divisions - 1)
         j += k;
     return j;
 }
