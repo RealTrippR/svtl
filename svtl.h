@@ -77,20 +77,52 @@ struct SVTL_VertexInfo
     uint32_t positionOffset;
 };
 
+/*
+/// Initializes the Simple Vertex Transformation Library.
+/// @return errno_t - error code: 0 on success, -1 upon failure*/
 SVTL_API errno_t SVTL_Init(void);
 
+/// Terminates the Simple Vertex Transformation Library.
 SVTL_API void SVTL_Terminate(void);
 
+/// Translates the positions of the given vertices by displacement units.
+/// @param SVTL_VertexInfo* vi - vertex info
+/// @param SVTL_F64Vec2 displacement - 2D displacement
+/// @return errno_t - error code: 0 on success, -1 upon failure*/
 SVTL_API errno_t SVTL_translate2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 displacement);
 
+
+/// Rotates the positions of the given vertices around the origin by radians.
+/// @param SVTL_VertexInfo* vi - vertex info
+/// @param double radians - rotation in radians
+/// @param SVTL_F64Vec2 origin - the origin of the rotation
+/// @return errno_t - error code: 0 on success, -1 upon failure*/
 SVTL_API errno_t SVTL_rotate2D(const struct SVTL_VertexInfo* vi, double radians, struct SVTL_F64Vec2 origin);
 
+/// Dilates the positions of the given vertices around the origin by the scaleFactor.
+/// @param SVTL_VertexInfo* vi - vertex info
+/// @param SVTL_F64Vec2 scaleFactor - scale factor.
+/// @param SVTL_F64Vec2 origin - the origin of the dilation.
+/// @return errno_t - error code: 0 on success, -1 upon failure*/
 SVTL_API errno_t SVTL_scale2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 scaleFactor, struct SVTL_F64Vec2 origin);
 
+/// Skews the positions of the given vertices around the origin by the skewFactor.
+/// @param SVTL_VertexInfo* vi - vertex info
+/// @param SVTL_F64Vec2 skewFactor - skew factor.
+/// @param SVTL_F64Vec2 origin - the origin of the skew.
+/// @return errno_t - error code: 0 on success, -1 upon failure*/
 SVTL_API errno_t SVTL_skew2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 skewFactor, struct SVTL_F64Vec2 origin);
 
+
+/// Returns the signed area of a simple closed polygon.
+/// @param SVTL_VertexInfo* vi - vertex info
+/// @return double - the signed area of the polygon.
 SVTL_API double SVTL_findSignedArea(const struct SVTL_VertexInfo* vi);
 
+
+/// Returns the centroid of a simple closed polygon.
+/// @param SVTL_VertexInfo* vi - vertex info
+/// @return SVTL_F64Vec2 - the centroid of the polygon.
 SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfo* vi);
 
 #endif /*SVTL_H*/
