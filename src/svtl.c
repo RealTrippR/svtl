@@ -490,7 +490,7 @@ struct SVTL_ExtractVertexPositions2D_Args {
 SVTL_API void* SVTL_ExtractVertexPositions2D_ThreadSegment(void* args__) 
 {
     struct SVTL_ExtractVertexPositions2D_Args* args = args__;
-    struct SVTL_VertexInfo* vi = args->vi;
+    const struct SVTL_VertexInfo* vi = args->vi;
     void* vertices = vi->vertices;
     struct SVTL_F64Vec2* positionsOut = args->positionsOut;
 
@@ -499,7 +499,7 @@ SVTL_API void* SVTL_ExtractVertexPositions2D_ThreadSegment(void* args__)
     {
         for (; i < vi->count; ++i)
         {
-            struct SVTL_F32Vec2* pos = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
+            struct SVTL_F32Vec2* pos = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
             positionsOut[i].x = pos->x;
             positionsOut[i].x = pos->y;
         }
