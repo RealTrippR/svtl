@@ -6,20 +6,12 @@ SVTL is a basic vertex transformation library written in C89. It provides a hand
 <ins> Functions </ins>
 
 ```SVTL_Init``` - Initializes SVTL </br>
-```SVTL_Terminate``` - Terminates SVTL
-
-```SVTL_translate2D``` - translates by a given displacement
-
-```SVTL_rotate2D``` - rotates around the origin
-
-```SVTL_scale2D``` - scales relative to the origin
-
-```SVTL_skew2D``` - skews relative to the origin
-
-```SVTL_findSignedArea``` - returns the signed area of a simple closed polygon
-
-```SVTL_findCentroid2D``` - returns the centroid of a simple closed polygon
-
-```SVTL_ExtractVertexPositions2D``` - writes vertex positions to a buffer
-
-```SVTL_ExtractVertexPositions2D_s``` - writes vertex positions to a bounds checked buffer
+```SVTL_Terminate``` - Terminates SVTL </br>
+```SVTL_translate2D``` - translates by a given displacement </br>
+```SVTL_rotate2D``` - rotates around the origin </br>
+```SVTL_scale2D``` - scales relative to the origin </br>
+```SVTL_skew2D``` - skews relative to the origin </br>
+```SVTL_findSignedArea``` - returns the signed area of a simple closed polygon </br>
+```SVTL_findCentroid2D``` - returns the centroid of a simple closed polygon </br>
+```SVTL_ExtractVertexPositions2D``` - writes vertex positions to a buffer </br>
+```SVTL_ExtractVertexPositions2D_s``` - writes vertex positions to a bounds checked buffer </br>
