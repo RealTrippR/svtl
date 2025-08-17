@@ -127,6 +127,15 @@ namespace svtl
         return SVTL_findSignedArea((SVTL_VertexInfo*)vi);
     }
 
+   /*
+    /// Returns the centroid of a simple closed polygon.
+    /// @param SVTL_VertexInfo* vi - vertex info
+    /// @return SVTL_F64Vec2 - the centroid of the polygon */
+    inline F64Vec2 findCentroid2D(const struct VertexInfo* vi)
+    {
+        const SVTL_F64Vec2 v2 = SVTL_findCentroid2D((SVTL_VertexInfo*)vi);
+        return {v2.x, v2.y};
+    }
     
     /*
     /// Extracts the positions of the given vertices and stores them in an array with a size of (vi.count * sizeof(SVTL_F64Vec2))
