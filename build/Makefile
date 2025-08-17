@@ -116,24 +116,38 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named SVTL
+# Target rules for targets named SVTL_STATIC
 
 # Build rule for target.
-SVTL: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 SVTL
-.PHONY : SVTL
+SVTL_STATIC: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 SVTL_STATIC
+.PHONY : SVTL_STATIC
 
 # fast build rule for target.
-SVTL/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL.dir\build.make CMakeFiles/SVTL.dir/build
-.PHONY : SVTL/fast
+SVTL_STATIC/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_STATIC.dir\build.make CMakeFiles/SVTL_STATIC.dir/build
+.PHONY : SVTL_STATIC/fast
+
+#=============================================================================
+# Target rules for targets named SVTL_SHARED
+
+# Build rule for target.
+SVTL_SHARED: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 SVTL_SHARED
+.PHONY : SVTL_SHARED
+
+# fast build rule for target.
+SVTL_SHARED/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_SHARED.dir\build.make CMakeFiles/SVTL_SHARED.dir/build
+.PHONY : SVTL_SHARED/fast
 
 src/cthreads.obj: src/cthreads.c.obj
 .PHONY : src/cthreads.obj
 
 # target to build an object file
 src/cthreads.c.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL.dir\build.make CMakeFiles/SVTL.dir/src/cthreads.c.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_STATIC.dir\build.make CMakeFiles/SVTL_STATIC.dir/src/cthreads.c.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_SHARED.dir\build.make CMakeFiles/SVTL_SHARED.dir/src/cthreads.c.obj
 .PHONY : src/cthreads.c.obj
 
 src/cthreads.i: src/cthreads.c.i
@@ -141,7 +155,8 @@ src/cthreads.i: src/cthreads.c.i
 
 # target to preprocess a source file
 src/cthreads.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL.dir\build.make CMakeFiles/SVTL.dir/src/cthreads.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_STATIC.dir\build.make CMakeFiles/SVTL_STATIC.dir/src/cthreads.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_SHARED.dir\build.make CMakeFiles/SVTL_SHARED.dir/src/cthreads.c.i
 .PHONY : src/cthreads.c.i
 
 src/cthreads.s: src/cthreads.c.s
@@ -149,7 +164,8 @@ src/cthreads.s: src/cthreads.c.s
 
 # target to generate assembly for a file
 src/cthreads.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL.dir\build.make CMakeFiles/SVTL.dir/src/cthreads.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_STATIC.dir\build.make CMakeFiles/SVTL_STATIC.dir/src/cthreads.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_SHARED.dir\build.make CMakeFiles/SVTL_SHARED.dir/src/cthreads.c.s
 .PHONY : src/cthreads.c.s
 
 src/svtl.obj: src/svtl.c.obj
@@ -157,7 +173,8 @@ src/svtl.obj: src/svtl.c.obj
 
 # target to build an object file
 src/svtl.c.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL.dir\build.make CMakeFiles/SVTL.dir/src/svtl.c.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_STATIC.dir\build.make CMakeFiles/SVTL_STATIC.dir/src/svtl.c.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_SHARED.dir\build.make CMakeFiles/SVTL_SHARED.dir/src/svtl.c.obj
 .PHONY : src/svtl.c.obj
 
 src/svtl.i: src/svtl.c.i
@@ -165,7 +182,8 @@ src/svtl.i: src/svtl.c.i
 
 # target to preprocess a source file
 src/svtl.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL.dir\build.make CMakeFiles/SVTL.dir/src/svtl.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_STATIC.dir\build.make CMakeFiles/SVTL_STATIC.dir/src/svtl.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_SHARED.dir\build.make CMakeFiles/SVTL_SHARED.dir/src/svtl.c.i
 .PHONY : src/svtl.c.i
 
 src/svtl.s: src/svtl.c.s
@@ -173,7 +191,8 @@ src/svtl.s: src/svtl.c.s
 
 # target to generate assembly for a file
 src/svtl.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL.dir\build.make CMakeFiles/SVTL.dir/src/svtl.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_STATIC.dir\build.make CMakeFiles/SVTL_STATIC.dir/src/svtl.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_SHARED.dir\build.make CMakeFiles/SVTL_SHARED.dir/src/svtl.c.s
 .PHONY : src/svtl.c.s
 
 # Help Target
@@ -184,7 +203,8 @@ help:
 	@echo ... depend
 	@echo ... edit_cache
 	@echo ... rebuild_cache
-	@echo ... SVTL
+	@echo ... SVTL_SHARED
+	@echo ... SVTL_STATIC
 	@echo ... src/cthreads.obj
 	@echo ... src/cthreads.i
 	@echo ... src/cthreads.s

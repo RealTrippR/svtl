@@ -62,11 +62,13 @@ CMAKE_BINARY_DIR = "C:\Users\TrippR\OneDrive\Documents\REPOS\Tripp's-Simple-Vert
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/SVTL.dir/all
+all: CMakeFiles/SVTL_STATIC.dir/all
+all: CMakeFiles/SVTL_SHARED.dir/all
 .PHONY : all
 
 # The main recursive "codegen" target.
-codegen: CMakeFiles/SVTL.dir/codegen
+codegen: CMakeFiles/SVTL_STATIC.dir/codegen
+codegen: CMakeFiles/SVTL_SHARED.dir/codegen
 .PHONY : codegen
 
 # The main recursive "preinstall" target.
@@ -74,40 +76,73 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/SVTL.dir/clean
+clean: CMakeFiles/SVTL_STATIC.dir/clean
+clean: CMakeFiles/SVTL_SHARED.dir/clean
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/SVTL.dir
+# Target rules for target CMakeFiles/SVTL_STATIC.dir
 
 # All Build rule for target.
-CMakeFiles/SVTL.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL.dir\build.make CMakeFiles/SVTL.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL.dir\build.make CMakeFiles/SVTL.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="C:\Users\TrippR\OneDrive\Documents\REPOS\Tripp's-Simple-Vertex-Transformation-Library\svtl\build\CMakeFiles" --progress-num=1,2,3 "Built target SVTL"
-.PHONY : CMakeFiles/SVTL.dir/all
+CMakeFiles/SVTL_STATIC.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_STATIC.dir\build.make CMakeFiles/SVTL_STATIC.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_STATIC.dir\build.make CMakeFiles/SVTL_STATIC.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="C:\Users\TrippR\OneDrive\Documents\REPOS\Tripp's-Simple-Vertex-Transformation-Library\svtl\build\CMakeFiles" --progress-num=4,5,6 "Built target SVTL_STATIC"
+.PHONY : CMakeFiles/SVTL_STATIC.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/SVTL.dir/rule: cmake_check_build_system
+CMakeFiles/SVTL_STATIC.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start "C:\Users\TrippR\OneDrive\Documents\REPOS\Tripp's-Simple-Vertex-Transformation-Library\svtl\build\CMakeFiles" 3
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/SVTL.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/SVTL_STATIC.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start "C:\Users\TrippR\OneDrive\Documents\REPOS\Tripp's-Simple-Vertex-Transformation-Library\svtl\build\CMakeFiles" 0
-.PHONY : CMakeFiles/SVTL.dir/rule
+.PHONY : CMakeFiles/SVTL_STATIC.dir/rule
 
 # Convenience name for target.
-SVTL: CMakeFiles/SVTL.dir/rule
-.PHONY : SVTL
+SVTL_STATIC: CMakeFiles/SVTL_STATIC.dir/rule
+.PHONY : SVTL_STATIC
 
 # codegen rule for target.
-CMakeFiles/SVTL.dir/codegen:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL.dir\build.make CMakeFiles/SVTL.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="C:\Users\TrippR\OneDrive\Documents\REPOS\Tripp's-Simple-Vertex-Transformation-Library\svtl\build\CMakeFiles" --progress-num=1,2,3 "Finished codegen for target SVTL"
-.PHONY : CMakeFiles/SVTL.dir/codegen
+CMakeFiles/SVTL_STATIC.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_STATIC.dir\build.make CMakeFiles/SVTL_STATIC.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="C:\Users\TrippR\OneDrive\Documents\REPOS\Tripp's-Simple-Vertex-Transformation-Library\svtl\build\CMakeFiles" --progress-num=4,5,6 "Finished codegen for target SVTL_STATIC"
+.PHONY : CMakeFiles/SVTL_STATIC.dir/codegen
 
 # clean rule for target.
-CMakeFiles/SVTL.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL.dir\build.make CMakeFiles/SVTL.dir/clean
-.PHONY : CMakeFiles/SVTL.dir/clean
+CMakeFiles/SVTL_STATIC.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_STATIC.dir\build.make CMakeFiles/SVTL_STATIC.dir/clean
+.PHONY : CMakeFiles/SVTL_STATIC.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/SVTL_SHARED.dir
+
+# All Build rule for target.
+CMakeFiles/SVTL_SHARED.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_SHARED.dir\build.make CMakeFiles/SVTL_SHARED.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_SHARED.dir\build.make CMakeFiles/SVTL_SHARED.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="C:\Users\TrippR\OneDrive\Documents\REPOS\Tripp's-Simple-Vertex-Transformation-Library\svtl\build\CMakeFiles" --progress-num=1,2,3 "Built target SVTL_SHARED"
+.PHONY : CMakeFiles/SVTL_SHARED.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/SVTL_SHARED.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start "C:\Users\TrippR\OneDrive\Documents\REPOS\Tripp's-Simple-Vertex-Transformation-Library\svtl\build\CMakeFiles" 3
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/SVTL_SHARED.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start "C:\Users\TrippR\OneDrive\Documents\REPOS\Tripp's-Simple-Vertex-Transformation-Library\svtl\build\CMakeFiles" 0
+.PHONY : CMakeFiles/SVTL_SHARED.dir/rule
+
+# Convenience name for target.
+SVTL_SHARED: CMakeFiles/SVTL_SHARED.dir/rule
+.PHONY : SVTL_SHARED
+
+# codegen rule for target.
+CMakeFiles/SVTL_SHARED.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_SHARED.dir\build.make CMakeFiles/SVTL_SHARED.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="C:\Users\TrippR\OneDrive\Documents\REPOS\Tripp's-Simple-Vertex-Transformation-Library\svtl\build\CMakeFiles" --progress-num=1,2,3 "Finished codegen for target SVTL_SHARED"
+.PHONY : CMakeFiles/SVTL_SHARED.dir/codegen
+
+# clean rule for target.
+CMakeFiles/SVTL_SHARED.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\SVTL_SHARED.dir\build.make CMakeFiles/SVTL_SHARED.dir/clean
+.PHONY : CMakeFiles/SVTL_SHARED.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

@@ -61,12 +61,12 @@ void SVTL_destroyInstance(struct SVTL_Instance* instance)
     instance->threadCount = 0u;
 }
 
-errno_t SVTL_Init(void)
+SVTL_API errno_t SVTL_Init(void)
 {
     return SVTL_createInstance(&instance);
 }
 
-void SVTL_Terminate(void)
+SVTL_API void SVTL_Terminate(void)
 {
     SVTL_destroyInstance(&instance);
 }
@@ -118,7 +118,7 @@ static u32 getSegmentSize(u32 count, u32 divisions, u32 divisionIdx)
     return j;
 }
 
-errno_t SVTL_translate2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 displacement)
+SVTL_API errno_t SVTL_translate2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 displacement)
 {
     struct SVTL_translate2D_Args* dataList = malloc(sizeof(struct SVTL_translate2D_Args) * instance.threadCount);
     struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
@@ -206,7 +206,7 @@ void* SVTL_rotate2D_ThreadSegment(void* v)
     return NULL;
 }
 
-errno_t SVTL_rotate2D(const struct SVTL_VertexInfo* vi, f64 radians, struct SVTL_F64Vec2 origin)
+SVTL_API errno_t SVTL_rotate2D(const struct SVTL_VertexInfo* vi, f64 radians, struct SVTL_F64Vec2 origin)
 {
     struct SVTL_rotate2D_Args* dataList = malloc(sizeof(struct SVTL_rotate2D_Args) * instance.threadCount);
     struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
@@ -291,7 +291,7 @@ void* SVTL_scale2D_ThreadSegment(void* v)
     return NULL;
 }
 
-errno_t SVTL_scale2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 scaleFactor, struct SVTL_F64Vec2 origin)
+SVTL_API errno_t SVTL_scale2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 scaleFactor, struct SVTL_F64Vec2 origin)
 {
     struct SVTL_scale2D_Args* dataList = malloc(sizeof(struct SVTL_scale2D_Args) * instance.threadCount);
     struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
@@ -376,7 +376,7 @@ void* SVTL_skew2D_ThreadSegment(void *v)
     return NULL;
 }
 
-errno_t SVTL_skew2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 skewFactor, struct SVTL_F64Vec2 origin)
+SVTL_API errno_t SVTL_skew2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 skewFactor, struct SVTL_F64Vec2 origin)
 {
     struct SVTL_skew2D_Args* dataList = malloc(sizeof(struct SVTL_skew2D_Args) * instance.threadCount);
     struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
@@ -416,7 +416,7 @@ errno_t SVTL_skew2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 skewFa
     return 0;
 }
 
-f64 SVTL_findSignedArea(const struct SVTL_VertexInfo* vi)
+SVTL_API f64 SVTL_findSignedArea(const struct SVTL_VertexInfo* vi)
 {
     const void* vertices = vi->vertices;
 
@@ -434,7 +434,7 @@ f64 SVTL_findSignedArea(const struct SVTL_VertexInfo* vi)
     return area;
 }
 
-struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfo* vi)
+SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfo* vi)
 {
     /* https://en.wikipedia.org/wiki/Centroid#Of_a_polygon */
 

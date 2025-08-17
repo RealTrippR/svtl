@@ -20,7 +20,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 #define SVTL_H
 
 #ifdef SVTL_DYNAMIC
-#ifdef SVTL_EXPORTS
+#ifdef SVTL_SHARED_EXPORTS
 #define SVTL_API __declspec(dllexport)
 #else
 #define SVTL_API __declspec(dllimport)

@@ -51,5 +51,6 @@ set(CMAKE_MAKEFILE_PRODUCTS
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
-  "CMakeFiles/SVTL.dir/DependInfo.cmake"
+  "CMakeFiles/SVTL_STATIC.dir/DependInfo.cmake"
+  "CMakeFiles/SVTL_SHARED.dir/DependInfo.cmake"
   )

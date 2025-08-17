@@ -6,11 +6,25 @@ project(
 )
 set(CMAKE_C_STANDARD 90)
 
-add_library(SVTL STATIC
+add_library(SVTL_STATIC STATIC
     src/svtl.c
     src/cthreads.c
 )
-
-target_include_directories(SVTL PUBLIC
+add_library(SVTL_SHARED SHARED
+    src/svtl.c
+    src/cthreads.c
+)
+target_include_directories(SVTL_STATIC PUBLIC
     ${PROJECT_SOURCE_DIR}
 )
+target_include_directories(SVTL_SHARED PUBLIC
+    ${PROJECT_SOURCE_DIR}
+)
+
+target_compile_definitions(SVTL_SHARED PUBLIC
+    SVTL_DYNAMIC
+)
+target_compile_definitions(SVTL_SHARED PRIVATE SVTL_SHARED_EXPORTS)
+
+set_target_properties(SVTL_STATIC PROPERTIES OUTPUT_NAME "SVTL")
+set_target_properties(SVTL_SHARED PROPERTIES OUTPUT_NAME "SVTL")
