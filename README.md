@@ -73,8 +73,6 @@ int main()
 }
 ```
 
-<ins> **Performance** </ins>
-
 <ins> **Naming Conventions** </ins>
 - Preprocessor Macros: UPPER_SNAKE_CASE
 - Function Names: CamelCase
