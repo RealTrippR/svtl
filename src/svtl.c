@@ -63,7 +63,7 @@ void SVTL_destroyInstance(struct SVTL_Instance* instance)
     instance->threadCount = 0u;
 }
 
-SVTL_API errno_t  (void)
+SVTL_API errno_t SVTL_Init(void)
 {
     return SVTL_createInstance(&instance);
 }
