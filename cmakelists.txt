@@ -22,7 +22,7 @@ target_include_directories(SVTL_SHARED PUBLIC
 )
 
 # add shared macro
-target_compile_definitions(SVTL_SHARED PUBLIC
+target_compile_definitions(SVTL_SHARED PRIVATE
     SVTL_DYNAMIC
 )
 target_compile_definitions(SVTL_SHARED PRIVATE SVTL_SHARED_EXPORTS)
@@ -89,7 +89,6 @@ endif()
 
 
 set_target_properties(SVTL_SHARED PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
@@ -97,8 +96,6 @@ set_target_properties(SVTL_SHARED PROPERTIES
 
 set_target_properties(SVTL_STATIC PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
 target_link_libraries(SVTL_SHARED PRIVATE common)

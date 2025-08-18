@@ -155,4 +155,20 @@ namespace svtl
     {
         return SVTL_ExtractVertexPositions2D_s((SVTL_VertexInfo*)vi, (SVTL_F64Vec2*)positionsOut, buffSize);
     }
+
+
+
+
+
+
+    class SVTL_STATE_TRACKER
+    {
+        SVTL_STATE_TRACKER() {
+            SVTL_Init();
+        }
+
+        ~SVTL_STATE_TRACKER() {
+            SVTL_Terminate();
+        }
+    };
 }

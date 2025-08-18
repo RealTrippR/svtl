@@ -19,10 +19,10 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 #ifndef SVTL_H
 #define SVTL_H
 
-#ifndef SVTL_API
-    #ifdef SVTL_DYNAMIC
+#if !defined(SVTL_API)
+    #if defined(SVTL_DYNAMIC)
 
-        #ifdef SVTL_SHARED_EXPORTS
+        #if defined(SVTL_SHARED_EXPORTS)
             #define SVTL_API __declspec(dllexport)
         #else
             #define SVTL_API __declspec(dllimport)
@@ -35,12 +35,13 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
     #ifdef __cplusplus 
         #define SVTL_API extern "C"
 
-        #ifdef SVTL_SHARED_EXPORTS
-            #define SVTL_API extern "C" __declspec(dllexport)
-        #else
-            #define SVTL_API extern "C" __declspec(dllimport)
+        #if defined(SVTL_DYNAMIC)
+            #if defined(SVTL_SHARED_EXPORTS)
+                #define SVTL_API extern "C" __declspec(dllexport)
+            #else
+                #define SVTL_API extern "C" __declspec(dllimport)
+            #endif
         #endif
-
     #endif
 #endif
 

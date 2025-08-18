@@ -18,8 +18,8 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 #include "../svtl.h"
 #include "cthreads.h"
 #include <math.h>
-
-#define SVTL_DEFAULT_THREAD_COUNT 4u
+#include <assert.h>
+#define SVTL_DEFAULT_THREAD_COUNT 2u
 
 typedef	uint8_t u8;
 typedef int8_t i8;
@@ -41,6 +41,13 @@ struct SVTL_Instance {
 struct SVTL_Instance instance = {NULL, 0};
 
 
+void DBG_VALIDATE_INSTANCE_USAGE() {
+    #ifndef NDEBUG
+        if (instance.threadCount=0u) {
+            assert(00&&"SVTL_Init() must be called before usage of any other SVTL functions.");
+        }
+    #endif
+}
 
 static errno_t SVTL_createInstance(struct SVTL_Instance* _instance)
 {
@@ -122,6 +129,8 @@ static u32 getSegmentSize(u32 count, u32 divisions, u32 divisionIdx)
 
 SVTL_API errno_t SVTL_translate2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 displacement)
 {
+    DBG_VALIDATE_INSTANCE_USAGE();
+
     struct SVTL_translate2D_Args* dataList = malloc(sizeof(struct SVTL_translate2D_Args) * instance.threadCount);
     struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
     if (!dataList || !argList) {
@@ -210,6 +219,8 @@ void* SVTL_rotate2D_ThreadSegment(void* v)
 
 SVTL_API errno_t SVTL_rotate2D(const struct SVTL_VertexInfo* vi, f64 radians, struct SVTL_F64Vec2 origin)
 {
+    DBG_VALIDATE_INSTANCE_USAGE();
+
     struct SVTL_rotate2D_Args* dataList = malloc(sizeof(struct SVTL_rotate2D_Args) * instance.threadCount);
     struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
     if (!dataList || !argList) {
@@ -339,6 +350,8 @@ struct SVTL_skew2D_Args
 
 void* SVTL_skew2D_ThreadSegment(void *v)
 {
+    DBG_VALIDATE_INSTANCE_USAGE();
+
     struct SVTL_skew2D_Args* args  = (struct SVTL_skew2D_Args*)v;
 
     const struct SVTL_VertexInfo* vi = args->vi;
@@ -380,6 +393,8 @@ void* SVTL_skew2D_ThreadSegment(void *v)
 
 SVTL_API errno_t SVTL_skew2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 skewFactor, struct SVTL_F64Vec2 origin)
 {
+    DBG_VALIDATE_INSTANCE_USAGE();
+
     struct SVTL_skew2D_Args* dataList = malloc(sizeof(struct SVTL_skew2D_Args) * instance.threadCount);
     struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
     if (!dataList || !argList) {
@@ -419,6 +434,8 @@ SVTL_API errno_t SVTL_skew2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Ve
 
 SVTL_API f64 SVTL_findSignedArea(const struct SVTL_VertexInfo* vi)
 {
+    DBG_VALIDATE_INSTANCE_USAGE();
+
     const void* vertices = vi->vertices;
 
     f64 area = 0.0;
@@ -448,6 +465,8 @@ SVTL_API f64 SVTL_findSignedArea(const struct SVTL_VertexInfo* vi)
 
 SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfo* vi)
 {
+    DBG_VALIDATE_INSTANCE_USAGE();
+
     /* https://en.wikipedia.org/wiki/Centroid#Of_a_polygon */
 
     const void* vertices = vi->vertices;
@@ -491,6 +510,8 @@ struct SVTL_ExtractVertexPositions2D_Args {
 
 SVTL_API void* SVTL_ExtractVertexPositions2D_ThreadSegment(void* args__) 
 {
+    DBG_VALIDATE_INSTANCE_USAGE();
+
     struct SVTL_ExtractVertexPositions2D_Args* args = args__;
     const struct SVTL_VertexInfo* vi = args->vi;
     void* vertices = vi->vertices;
@@ -521,6 +542,8 @@ SVTL_API void* SVTL_ExtractVertexPositions2D_ThreadSegment(void* args__)
 
 SVTL_API errno_t SVTL_ExtractVertexPositions2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2* positionsOut)
 {
+    DBG_VALIDATE_INSTANCE_USAGE();
+
     struct SVTL_ExtractVertexPositions2D_Args* dataList = malloc(sizeof(struct SVTL_ExtractVertexPositions2D_Args) * instance.threadCount);
     struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
     if (!dataList || !argList) {
@@ -559,6 +582,8 @@ SVTL_API errno_t SVTL_ExtractVertexPositions2D(const struct SVTL_VertexInfo* vi,
 
 SVTL_API errno_t SVTL_ExtractVertexPositions2D_s(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2* positionsOut, uint64_t posBuffSize)
 {
+    DBG_VALIDATE_INSTANCE_USAGE();
+
     if (posBuffSize < vi->count*sizeof(struct SVTL_F64Vec2))
         return -1;
     return SVTL_ExtractVertexPositions2D(vi, positionsOut);
