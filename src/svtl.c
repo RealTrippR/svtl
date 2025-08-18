@@ -43,7 +43,7 @@ struct SVTL_Instance instance = {NULL, 0};
 
 void DBG_VALIDATE_INSTANCE_USAGE() {
     #ifndef NDEBUG
-        if (instance.threadCount=0u) {
+        if (0u==instance.threadCount) {
             assert(00&&"SVTL_Init() must be called before usage of any other SVTL functions.");
         }
     #endif
