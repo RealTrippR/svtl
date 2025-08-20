@@ -144,8 +144,6 @@ namespace svtl
         return SVTL_ExtractVertexPositions2D((SVTL_VertexInfo*)vi, (SVTL_F64Vec2*)positionsOut);
     }
 
-        
-    
     /*
     /// Extracts the positions of the given vertices and stores them in an array with a size of (vi.count * sizeof(SVTL_F64Vec2))
     /// Identical to SVTL_ExtractVertexPositions2D, except it checks to ensure that the buffer length is of the correct size.

@@ -75,6 +75,12 @@ struct SVTL_F64Vec3
     double z;
 };
 
+struct SVTL_F64Line2
+{
+    double dir; /*direction in radians*/
+    struct SVTL_F64Vec2 center;
+};
+
 enum SVTL_PositionType
 {
     SVTL_POS_TYPE_VEC2_F32,
@@ -91,13 +97,13 @@ struct SVTL_VertexInfo
 };
 
 /*
-/// Initializes the Simple Vertex Transformation Library.
+/// Registers a usage of the Simple Vertex Transformation Library.
 /// @return errno_t - error code: 0 on success, -1 upon failure */
-SVTL_API errno_t SVTL_Init(void);
+SVTL_API errno_t SVTL_Register(void);
 
 /*
-/// Terminates the Simple Vertex Transformation Library. */
-SVTL_API void SVTL_Terminate(void);
+/// Unregisters a usage of the Simple Vertex Transformation Library.*/
+SVTL_API void SVTL_Unregister(void);
 
 /*
 /// Translates the positions of the given vertices by displacement units.
@@ -129,6 +135,13 @@ SVTL_API errno_t SVTL_scale2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64V
 /// @param SVTL_F64Vec2 origin - the origin of the skew.
 /// @return errno_t - error code: 0 on success, -1 upon failure */
 SVTL_API errno_t SVTL_skew2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 skewFactor, struct SVTL_F64Vec2 origin);
+
+/*
+/// Mirros the positions of the given vertices around the mirror line.
+/// @param SVTL_VertexInfo* vi - vertex info
+/// @param SVTL_F64Vec2 origin - the origin of the skew.
+/// @return errno_t - error code: 0 on success, -1 upon failure */
+SVTL_API errno_t SVTL_mirror2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Line2 mirrorLine);
 
 /*
 /// Returns the signed area of a simple closed polygon.

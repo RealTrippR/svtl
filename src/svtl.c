@@ -38,10 +38,11 @@ struct SVTL_Instance {
     u16 threadCount;
 };
 
+static u64 svtlUsageCount = 0u;
 struct SVTL_Instance instance = {NULL, 0};
 
 
-void DBG_VALIDATE_INSTANCE_USAGE() {
+static void DBG_VALIDATE_INSTANCE_USAGE() {
     #ifndef NDEBUG
         if (0u==instance.threadCount) {
             assert(00&&"SVTL_Init() must be called before usage of any other SVTL functions.");
@@ -70,21 +71,29 @@ static void SVTL_destroyInstance(struct SVTL_Instance* _instance)
     _instance->threadCount = 0u;
 }
 
-SVTL_API errno_t SVTL_Init(void)
+SVTL_API errno_t SVTL_Register(void)
 {
-    return SVTL_createInstance(&instance);
+    svtlUsageCount++;
+    if (svtlUsageCount==1) {
+        return SVTL_createInstance(&instance);
+    }
+    return 0;
 }
 
-SVTL_API void SVTL_Terminate(void)
+SVTL_API void SVTL_Unregister(void)
 {
-    SVTL_destroyInstance(&instance);
+    if (svtlUsageCount>0)
+        svtlUsageCount--;
+    if (svtlUsageCount==0) {
+        SVTL_destroyInstance(&instance);
+    }
 }
 
 struct SVTL_translate2D_Args
 {
     const struct SVTL_VertexInfo* vi; u32 firstVertexIndex; u32 vertexCount; struct SVTL_F64Vec2 displacement;
 };
-void* SVTL_translate2D_ThreadSegment(void *v)
+static void* SVTL_translate2D_ThreadSegment(void *v)
 {
     struct SVTL_translate2D_Args* args = (struct SVTL_translate2D_Args*)v;
     const struct SVTL_VertexInfo* vi = args->vi;
@@ -172,7 +181,7 @@ struct SVTL_rotate2D_Args
     const struct SVTL_VertexInfo* vi;  u32 firstVertexIndex; u32 vertexCount; f64 radians; struct SVTL_F64Vec2 origin;
 };
 
-void* SVTL_rotate2D_ThreadSegment(void* v)
+static void* SVTL_rotate2D_ThreadSegment(void* v)
 {
     struct SVTL_rotate2D_Args* args  = (struct SVTL_rotate2D_Args*)v;
 
@@ -263,8 +272,7 @@ struct SVTL_scale2D_Args
 {
     const struct SVTL_VertexInfo* vi;  u32 firstVertexIndex; u32 vertexCount; struct SVTL_F64Vec2 scaleFactor; struct SVTL_F64Vec2 origin;
 };
-
-void* SVTL_scale2D_ThreadSegment(void* v)
+static void* SVTL_scale2D_ThreadSegment(void* v)
 {
     struct SVTL_scale2D_Args* args  = (struct SVTL_scale2D_Args*)v;
     const struct SVTL_VertexInfo* vi = args->vi;
@@ -348,7 +356,7 @@ struct SVTL_skew2D_Args
 };
 
 
-void* SVTL_skew2D_ThreadSegment(void *v)
+static void* SVTL_skew2D_ThreadSegment(void *v)
 {
     DBG_VALIDATE_INSTANCE_USAGE();
 
@@ -432,8 +440,99 @@ SVTL_API errno_t SVTL_skew2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Ve
     return 0;
 }
 
+
+struct SVTL_mirror2D_Args
+{
+    const struct SVTL_VertexInfo* vi; u32 firstVertexIndex; u32 vertexCount; struct SVTL_F64Line2 mirrorLine;
+};
+static void* SVTL_mirror2D_ThreadSegment(void*__args)
+{
+    struct SVTL_mirror2D_Args* args = __args;
+    const struct SVTL_VertexInfo* vi = args->vi;
+    const struct SVTL_F64Line2 mirrorLine = args->mirrorLine;
+    void* vertices = vi->vertices;
+    u32 firstVertexIndex = args->firstVertexIndex;
+    u32 vertexCount = args->vertexCount;
+
+
+    f64 c = cos(mirrorLine.dir);
+    f64 s = sin(mirrorLine.dir);
+    u32 i = firstVertexIndex;
+    const u32 end = firstVertexIndex + vertexCount;
+    if (vi->positionType == SVTL_POS_TYPE_VEC2_F32) {
+        for (; i < end; ++i)
+        {
+            struct SVTL_F32Vec2* pos = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
+            pos->x -= mirrorLine.center.x;
+            pos->y-= mirrorLine.center.y;
+
+            f32 rx = pos->x * c + pos->y * s;
+            f32 ry = pos->x * -s - pos->y * -c;
+
+            pos->x = c * rx - s * ry + mirrorLine.center.x;
+            pos->y = s * rx + c * ry + mirrorLine.center.y;
+        }
+    }
+    else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
+    {
+        for (; i < end; ++i)
+        {
+            struct SVTL_F64Vec2* pos = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
+            pos->x -= mirrorLine.center.x;
+            pos->y-= mirrorLine.center.y;
+
+            f64 rx = pos->x * c + pos->y * s;
+            f64 ry = pos->x * -s - pos->y * -c;
+
+            pos->x = c * rx - s * ry + mirrorLine.center.x;
+            pos->y = s * rx + c * ry + mirrorLine.center.y;
+        }
+    }
+}
+
+SVTL_API errno_t SVTL_mirror2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Line2 mirrorLine)
+{
+    DBG_VALIDATE_INSTANCE_USAGE();
+
+    struct SVTL_mirror2D_Args* dataList = malloc(sizeof(struct SVTL_mirror2D_Args) * instance.threadCount);
+    struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
+    if (!dataList || !argList) {
+        return -1;
+    }
+
+    u8 i;
+    for (i = 0; i < instance.threadCount; ++i)
+    {
+        struct cthreads_args* args = argList + i;
+        struct SVTL_mirror2D_Args* fData = &dataList[i];
+        fData->vi = vi;
+        fData->firstVertexIndex = i * (vi->count + 1) / instance.threadCount;
+        fData->vertexCount = getSegmentSize(vi->count, instance.threadCount, i);
+        fData->mirrorLine = mirrorLine;
+        args->data = fData;
+        args->func = SVTL_mirror2D_ThreadSegment;
+        cthreads_thread_create(instance.threads + i, NULL, args->func, args->data, args);
+    }
+
+    for (i = 0; i < instance.threadCount; ++i)
+    {
+        int exitCode = 0;
+        cthreads_thread_join(instance.threads[i], &exitCode);
+        if (exitCode != 0) {
+            free(dataList);
+            free(argList);
+            return -1;
+        }
+    }
+
+    free(dataList);
+    free(argList);
+    return 0;
+}
+
 SVTL_API f64 SVTL_findSignedArea(const struct SVTL_VertexInfo* vi)
 {
+    /*uses the shoelace formula*/
     DBG_VALIDATE_INSTANCE_USAGE();
 
     const void* vertices = vi->vertices;
