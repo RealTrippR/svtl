@@ -58,15 +58,44 @@ namespace svtl
         Vec2F64,
     };
 
+    
+    enum INDEX_TYPE
+    {
+        U16,
+        U32,
+    };
+
+    enum TOPOLOGY_TYOE
+    {
+        TriangleList,
+        TriangleStrip,
+        TriangleList
+    };
+
     struct VertexInfo
     {
         uint32_t stride;
         uint32_t count;
         void* vertices;
+        void* indices;
         enum POSITION_TYPE positionType;
+        enum INDEX_TYPE indexType;
+        enum TOPOLOGY_TYPE topologyType;
         uint32_t positionOffset;
     };
     
+    struct VertexInfoReadOnly
+    {
+        uint32_t stride;
+        uint32_t count;
+        const void* vertices;
+        const void* indices;
+        enum POSITION_TYPE positionType;
+        enum INDEX_TYPE indexType;
+        enum TOPOLOGY_TYPE topologyType;
+        uint32_t positionOffset;
+    };
+
     /*
     /// Registers a usage of the Simple Vertex Transformation Library.
     /// @return errno_t - error code: 0 on success, -1 upon failure */
@@ -129,9 +158,21 @@ namespace svtl
     /// @param SVTL_VertexInfo* vi - vertex info
     /// @param SVTL_F64Line2 mirrorLine - the line around which the mirror is performed
     /// @return errno_t - error code: 0 on success, -1 upon failure */
-    inline errno_t SVTL_mirror2D(const struct VertexInfo* vi, struct F64Line2 mirrorLine)
+    inline errno_t mirror2D(const struct VertexInfo* vi, struct F64Line2 mirrorLine)
     {
         return SVTL_mirror2D((SVTL_VertexInfo*)vi, *(SVTL_F64Line2*)&mirrorLine);
+    }
+
+    
+    /*
+    /// Converts a list of unindexed vertices to indexed vertices
+    /// @param SVTL_VertexInfo* vi - vertex info
+    /// @param void* verticesOut - a buffer to hold the new list of vertices. It must have a size of vertexCountOut * vi.stride
+    /// @param void* indicesOut - a buffer to hold the list of indices. It must have a size of indexCountOut * sizeof(u32)
+    /// @param uint32_t* vertexCountOut - the count of the new list of vertices*/
+    inline void unindexedToIndexed2D(const struct VertexInfoReadOnly* vi, void* verticesOut, uint32_t* vertexCountOut, uint32_t* indicesOut, uint32_t* indexCountOut)
+    {
+        unindexedToIndexed2D(vi, verticesOut, vertexCountOut, indicesOut, indexCountOut);
     }
 
 
@@ -139,18 +180,18 @@ namespace svtl
     /// Returns the signed area of a simple closed polygon.
     /// @param SVTL_VertexInfo* vi - vertex info
     /// @return double - the signed area of the polygon. */
-    inline double findSignedArea(const struct VertexInfo* vi)
+    inline double findSignedArea(const struct VertexInfoReadOnly* vi)
     {
-        return SVTL_findSignedArea((SVTL_VertexInfo*)vi);
+        return SVTL_findSignedArea((SVTL_VertexInfoReadOnly*)vi);
     }
 
    /*
     /// Returns the centroid of a simple closed polygon.
     /// @param SVTL_VertexInfo* vi - vertex info
     /// @return SVTL_F64Vec2 - the centroid of the polygon */
-    inline F64Vec2 findCentroid2D(const struct VertexInfo* vi)
+    inline F64Vec2 findCentroid2D(const struct VertexInfoReadOnly* vi)
     {
-        const SVTL_F64Vec2 v2 = SVTL_findCentroid2D((SVTL_VertexInfo*)vi);
+        const SVTL_F64Vec2 v2 = SVTL_findCentroid2D((SVTL_VertexInfoReadOnly*)vi);
         return {v2.x, v2.y};
     }
     
@@ -160,7 +201,7 @@ namespace svtl
     /// @param SVTL_F64Vec2* positionsOut - the buffer to store the positions*/
     inline errno_t ExtractVertexPositions2D(const struct VertexInfo* vi, F64Vec2* positionsOut)
     {
-        return SVTL_ExtractVertexPositions2D((SVTL_VertexInfo*)vi, (SVTL_F64Vec2*)positionsOut);
+        return SVTL_ExtractVertexPositions2D((SVTL_VertexInfoReadOnly*)vi, (SVTL_F64Vec2*)positionsOut);
     }
 
     /*
@@ -170,6 +211,6 @@ namespace svtl
     /// @param SVTL_F64Vec2* positionsOut - the buffer to store the positions*/
     inline errno_t ExtractVertexPositions2D_s(const struct VertexInfo* vi, F64Vec2* positionsOut, uint64_t buffSize)
     {
-        return SVTL_ExtractVertexPositions2D_s((SVTL_VertexInfo*)vi, (SVTL_F64Vec2*)positionsOut, buffSize);
+        return SVTL_ExtractVertexPositions2D_s((SVTL_VertexInfoReadOnly*)vi, (SVTL_F64Vec2*)positionsOut, buffSize);
     }
 }

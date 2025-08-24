@@ -171,6 +171,12 @@ SVTL_API errno_t SVTL_skew2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Ve
 SVTL_API errno_t SVTL_mirror2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Line2 mirrorLine);
 
 
+/*
+/// Converts a list of unindexed vertices to indexed vertices
+/// @param SVTL_VertexInfo* vi - vertex info
+/// @param void* verticesOut - a buffer to hold the new list of vertices. It must have a size of vertexCountOut * vi.stride
+/// @param void* indicesOut - a buffer to hold the list of indices. It must have a size of indexCountOut * sizeof(u32)
+/// @param uint32_t* vertexCountOut - the count of the new list of vertices*/
 SVTL_API void SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly* vi, void* verticesOut, uint32_t* vertexCountOut, uint32_t* indicesOut, uint32_t* indexCountOut);
 
 /*
