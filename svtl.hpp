@@ -69,7 +69,7 @@ namespace svtl
     {
         TriangleList,
         TriangleStrip,
-        TriangleList
+        TriangleFan
     };
 
     struct VertexInfo

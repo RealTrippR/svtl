@@ -9,10 +9,12 @@ set(CMAKE_C_STANDARD 90)
 add_library(SVTL_STATIC STATIC
     src/svtl.c
     src/cthreads.c
+    src/hashmap.c
 )
 add_library(SVTL_SHARED SHARED
     src/svtl.c
     src/cthreads.c
+    src/hashmap.c
 )
 target_include_directories(SVTL_STATIC PUBLIC
     ${PROJECT_SOURCE_DIR}

@@ -489,6 +489,7 @@ static void* SVTL_mirror2D_ThreadSegment(void*__args)
             pos->y = s * rx + c * ry + mirrorLine.center.y;
         }
     }
+    return NULL;
 }
 
 SVTL_API errno_t SVTL_mirror2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Line2 mirrorLine)
@@ -534,7 +535,7 @@ SVTL_API errno_t SVTL_mirror2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64
 struct vertexHashmapPair
 {
     struct SVTL_F64Vec2 pos;
-    void* vertex;
+    const void* vertex;
     u32 vIndex;
 };
 
@@ -563,12 +564,12 @@ SVTL_API void SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly* vi
         const u8* vertex = (u8*)vi->vertices + vi->stride * i;
         if (vi->positionType == SVTL_POS_TYPE_VEC2_F32) 
         {
-            struct SVTL_F32Vec2* pos = vertex + vi->positionOffset;
+            const struct SVTL_F32Vec2* pos = vertex + vi->positionOffset;
             hashmap_set(map, &(struct vertexHashmapPair){.pos={pos->x,pos->y}, .vertex = vertex, .vIndex = 0u});
         }
         else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
         {
-            struct SVTL_F64Vec2* pos = vertex + vi->positionOffset;
+            const struct SVTL_F64Vec2* pos = vertex + vi->positionOffset;
             hashmap_set(map, &(struct vertexHashmapPair){.pos={pos->x,pos->y}, .vertex = vertex, .vIndex = 0u});
         }
     }
@@ -580,7 +581,7 @@ SVTL_API void SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly* vi
         pair->vIndex = iter;
         
         if (verticesOut) {
-            memcpy(verticesOut + iter, pair->vertex, vi->stride);
+            memcpy((u8*)verticesOut + iter, pair->vertex, vi->stride);
         }
     }
     if (vertexCountOut)
@@ -590,28 +591,26 @@ SVTL_API void SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly* vi
         *indexCountOut = vi->count;
     
     /*update indices*/
-    u32 i; 
     for (i = 0; i < vi->count; ++i)
     {
         const u8* vertex = (u8*)vi->vertices + vi->stride * i;
           if (vi->positionType == SVTL_POS_TYPE_VEC2_F32) 
         {
-            struct SVTL_F32Vec2* pos = vertex + vi->positionOffset;
-            struct vertexHashmapPair *pair = hashmap_get(map, &(struct vertexHashmapPair){.pos = {pos->x,pos->y}});
+            const struct SVTL_F32Vec2* pos = vertex + vi->positionOffset;
+            const struct vertexHashmapPair *pair = hashmap_get(map, &(struct vertexHashmapPair){.pos = {pos->x,pos->y}});
             if (indicesOut) {
                 *(indicesOut + i) = pair->vIndex;
             }
         }
         else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
         {
-            struct SVTL_F64Vec2* pos = vertex + vi->positionOffset;
-            struct vertexHashmapPair *pair = hashmap_get(map, &(struct vertexHashmapPair){.pos = {pos->x,pos->y}});
-             if (indicesOut) {
+            const struct SVTL_F64Vec2* pos = vertex + vi->positionOffset;
+            const struct vertexHashmapPair *pair = hashmap_get(map, &(struct vertexHashmapPair){.pos = {pos->x,pos->y}});
+            if (indicesOut) {
                 *(indicesOut + i) = pair->vIndex;
             }
         }
     }
-    return 0;
 }
 
 SVTL_API f64 SVTL_findSignedArea(const struct SVTL_VertexInfo* vi)
@@ -627,8 +626,8 @@ SVTL_API f64 SVTL_findSignedArea(const struct SVTL_VertexInfo* vi)
     if (vi->positionType == SVTL_POS_TYPE_VEC2_F32) {
         for (; i < vi->count; ++i)
         {
-            struct SVTL_F32Vec2* pos = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
-            struct SVTL_F32Vec2* posNext = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * ((i + 1) % vi->count)) + vi->positionOffset);
+            const struct SVTL_F32Vec2* pos = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
+            const struct SVTL_F32Vec2* posNext = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * ((i + 1) % vi->count)) + vi->positionOffset);
             area +=  (pos->x * posNext->y - posNext->x * pos->y);
         }
     }
@@ -636,8 +635,8 @@ SVTL_API f64 SVTL_findSignedArea(const struct SVTL_VertexInfo* vi)
     {
          for (; i < vi->count; ++i)
         {
-            struct SVTL_F64Vec2* pos = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
-            struct SVTL_F64Vec2* posNext = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * ((i + 1) % vi->count)) + vi->positionOffset);
+            const struct SVTL_F64Vec2* pos = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
+            const struct SVTL_F64Vec2* posNext = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * ((i + 1) % vi->count)) + vi->positionOffset);
             area +=  (pos->x * posNext->y - posNext->x * pos->y);
         }
     }
@@ -769,5 +768,5 @@ SVTL_API errno_t SVTL_extractVertexPositions2D_s(const struct SVTL_VertexInfo* v
 
     if (posBuffSize < vi->count*sizeof(struct SVTL_F64Vec2))
         return -1;
-    return SVTL_ExtractVertexPositions2D(vi, positionsOut);
+    return SVTL_extractVertexPositions2D(vi, positionsOut);
 }
