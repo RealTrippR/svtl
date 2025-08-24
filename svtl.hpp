@@ -99,14 +99,14 @@ namespace svtl
     /*
     /// Registers a usage of the Simple Vertex Transformation Library.
     /// @return errno_t - error code: 0 on success, -1 upon failure */
-    inline errno_t register(void) {
+    inline errno_t Register(void) {
         return SVTL_register();
     }
 
    
     /*
     /// Unregisters a usage of the Simple Vertex Transformation Library.*/
-    inline void unregister(void) {
+    inline void Unregister(void) {
         SVTL_unregister();
     }
 
