@@ -13,7 +13,6 @@ SVTL is a basic vertex transformation library written in C99. It provides a hand
 ```SVTL_skew2D``` - skews relative to the origin </br>
 ```SVTL_mirror2D``` - mirrors around a given line </br>
 ```SVTL_unindexedToIndexed2D``` - converts a list of unindexed vertices to indexed vertices
-
 ```SVTL_findSignedArea``` - returns the signed area of a simple closed polygon </br>
 ```SVTL_findCentroid2D``` - returns the centroid of a simple closed polygon </br>
 ```SVTL_extractVertexPositions2D``` - writes vertex positions to a buffer </br>
