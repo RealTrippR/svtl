@@ -46,6 +46,12 @@ namespace svtl
         double z;
     };
 
+    struct F64Line2
+    {
+        double dir; /*direction in radians*/
+        struct SVTL_F64Vec2 center;
+    };
+
     enum class POSITION_TYPE
     {
         Vec2F32,
@@ -60,17 +66,19 @@ namespace svtl
         enum POSITION_TYPE positionType;
         uint32_t positionOffset;
     };
+    
     /*
-    /// Initializes the Simple Vertex Transformation Library.
+    /// Registers a usage of the Simple Vertex Transformation Library.
     /// @return errno_t - error code: 0 on success, -1 upon failure */
-    inline errno_t Init(void) {
-        return SVTL_Init();
+    inline errno_t Register(void) {
+        return SVTL_Register();
     }
 
+   
     /*
-    /// Terminates the Simple Vertex Transformation Library. */
-    inline void Terminate(void) {
-        SVTL_Terminate();
+    /// Unregisters a usage of the Simple Vertex Transformation Library.*/
+    inline void Unregister(void) {
+        SVTL_Unregister();
     }
 
     /*
@@ -115,6 +123,17 @@ namespace svtl
     {
         return SVTL_skew2D((SVTL_VertexInfo*)vi, *(SVTL_F64Vec2*)&skewFactor, *(SVTL_F64Vec2*)&origin);
     }
+
+    /*
+    /// Mirrors the positions of the given vertices around the mirror line.
+    /// @param SVTL_VertexInfo* vi - vertex info
+    /// @param SVTL_F64Line2 mirrorLine - the line around which the mirror is performed
+    /// @return errno_t - error code: 0 on success, -1 upon failure */
+    inline errno_t SVTL_mirror2D(const struct VertexInfo* vi, struct F64Line2 mirrorLine)
+    {
+        return SVTL_mirror2D((SVTL_VertexInfo*)vi, *(SVTL_F64Line2*)&mirrorLine);
+    }
+
 
     /*
     /// Returns the signed area of a simple closed polygon.

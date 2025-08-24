@@ -87,12 +87,39 @@ enum SVTL_PositionType
     SVTL_POS_TYPE_VEC2_F64,
 };
 
+enum SVTL_IndexType
+{
+    SVTL_INDEX_TYPE_U16,
+    SVTL_INDEX_TYPE_U32,
+};
+
+enum SVTL_TopologyType
+{
+    SVTL_TOPOLOGY_TYPE_TRIANGLE_LIST,
+    SVTL_TOPOLOGY_TYPE_TRIANGLE_STRIP,
+    SVTL_TOPOLOGY_TYPE_TRIANGLE_LIST
+};
 struct SVTL_VertexInfo
 {
     uint32_t stride;
     uint32_t count;
     void* vertices;
+    void* indices;
     enum SVTL_PositionType positionType;
+    enum SVTL_IndexType indexType;
+    enum SVTL_TopologyType topologyType;
+    uint32_t positionOffset;
+};
+
+struct SVTL_VertexInfoReadOnly
+{
+    uint32_t stride;
+    uint32_t count;
+    const void* vertices;
+    const void* indices;
+    enum SVTL_PositionType positionType;
+    enum SVTL_IndexType indexType;
+    enum SVTL_TopologyType topologyType;
     uint32_t positionOffset;
 };
 
@@ -137,30 +164,33 @@ SVTL_API errno_t SVTL_scale2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64V
 SVTL_API errno_t SVTL_skew2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 skewFactor, struct SVTL_F64Vec2 origin);
 
 /*
-/// Mirros the positions of the given vertices around the mirror line.
+/// Mirrors the positions of the given vertices around the mirror line.
 /// @param SVTL_VertexInfo* vi - vertex info
-/// @param SVTL_F64Vec2 origin - the origin of the skew.
+/// @param SVTL_F64Line2 mirrorLine - the line around which the mirror is performed
 /// @return errno_t - error code: 0 on success, -1 upon failure */
 SVTL_API errno_t SVTL_mirror2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Line2 mirrorLine);
+
+
+SVTL_API void SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly* vi, void* verticesOut, uint32_t* vertexCountOut, uint32_t* indicesOut, uint32_t* indexCountOut);
 
 /*
 /// Returns the signed area of a simple closed polygon.
 /// @param SVTL_VertexInfo* vi - vertex info
 /// @return double - the signed area of the polygon */
-SVTL_API double SVTL_findSignedArea(const struct SVTL_VertexInfo* vi);
+SVTL_API double SVTL_findSignedArea(const struct SVTL_VertexInfoReadOnly* vi);
 
 /*
 /// Returns the centroid of a simple closed polygon.
 /// @param SVTL_VertexInfo* vi - vertex info
 /// @return SVTL_F64Vec2 - the centroid of the polygon */
-SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfo* vi);
+SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfoReadOnly* vi);
 
 /*
 /// Extracts the positions of the given vertices and stores them in an array with a size of (vi.count * sizeof(SVTL_F64Vec2))
 /// @param SVTL_VertexInfo* vi - vertex info
 /// @param SVTL_F64Vec2* positionsOut - the buffer to store the positions
 /// @return errno_t - error code: 0 on success, -1 upon failure */
-SVTL_API errno_t SVTL_ExtractVertexPositions2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2* positionsOut);
+SVTL_API errno_t SVTL_ExtractVertexPositions2D(const struct SVTL_VertexInfoReadOnly* vi, struct SVTL_F64Vec2* positionsOut);
 
 /*
 /// Extracts the positions of the given vertices and stores them in an array with a size of (vi.count * sizeof(SVTL_F64Vec2))
@@ -169,6 +199,6 @@ SVTL_API errno_t SVTL_ExtractVertexPositions2D(const struct SVTL_VertexInfo* vi,
 /// @param SVTL_F64Vec2* positionsOut - the buffer to store the positions
 /// @param uint64_t posBuffSize - the size of the buffer to store the positions in bytes
 /// @return errno_t - error code: 0 on success, -1 upon failure */
-SVTL_API errno_t SVTL_ExtractVertexPositions2D_s(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2* positionsOut, uint64_t posBuffSize);
+SVTL_API errno_t SVTL_ExtractVertexPositions2D_s(const struct SVTL_VertexInfoReadOnly* vi, struct SVTL_F64Vec2* positionsOut, uint64_t posBuffSize);
 
 #endif /*!SVTL_H*/

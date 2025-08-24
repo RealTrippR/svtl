@@ -3,6 +3,7 @@
         "*.embeddedhtml": "html",
         "*.ejs": "html",
         "cthreads.h": "c",
-        "errno.h": "c"
+        "errno.h": "c",
+        "typeinfo": "c"
     }
 }
