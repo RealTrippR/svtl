@@ -723,7 +723,7 @@ SVTL_API void* SVTL_ExtractVertexPositions2D_ThreadSegment(void* args__)
     return NULL;
 }
 
-SVTL_API errno_t SVTL_ExtractVertexPositions2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2* positionsOut)
+SVTL_API errno_t SVTL_extractVertexPositions2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2* positionsOut)
 {
     DBG_VALIDATE_INSTANCE_USAGE();
 
@@ -763,7 +763,7 @@ SVTL_API errno_t SVTL_ExtractVertexPositions2D(const struct SVTL_VertexInfo* vi,
     return 0;
 }
 
-SVTL_API errno_t SVTL_ExtractVertexPositions2D_s(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2* positionsOut, uint64_t posBuffSize)
+SVTL_API errno_t SVTL_extractVertexPositions2D_s(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2* positionsOut, uint64_t posBuffSize)
 {
     DBG_VALIDATE_INSTANCE_USAGE();
 

@@ -199,9 +199,9 @@ namespace svtl
     /// Extracts the positions of the given vertices and stores them in an array with a size of (vi.count * sizeof(SVTL_F64Vec2))
     /// @param SVTL_VertexInfo* vi - vertex info
     /// @param SVTL_F64Vec2* positionsOut - the buffer to store the positions*/
-    inline errno_t ExtractVertexPositions2D(const struct VertexInfo* vi, F64Vec2* positionsOut)
+    inline errno_t extractVertexPositions2D(const struct VertexInfo* vi, F64Vec2* positionsOut)
     {
-        return SVTL_ExtractVertexPositions2D((SVTL_VertexInfoReadOnly*)vi, (SVTL_F64Vec2*)positionsOut);
+        return SVTL_extractVertexPositions2D((SVTL_VertexInfoReadOnly*)vi, (SVTL_F64Vec2*)positionsOut);
     }
 
     /*
@@ -209,8 +209,8 @@ namespace svtl
     /// Identical to SVTL_ExtractVertexPositions2D, except it checks to ensure that the buffer length is of the correct size.
     /// @param SVTL_VertexInfo* vi - vertex info
     /// @param SVTL_F64Vec2* positionsOut - the buffer to store the positions*/
-    inline errno_t ExtractVertexPositions2D_s(const struct VertexInfo* vi, F64Vec2* positionsOut, uint64_t buffSize)
+    inline errno_t extractVertexPositions2D_s(const struct VertexInfo* vi, F64Vec2* positionsOut, uint64_t buffSize)
     {
-        return SVTL_ExtractVertexPositions2D_s((SVTL_VertexInfoReadOnly*)vi, (SVTL_F64Vec2*)positionsOut, buffSize);
+        return SVTL_extractVertexPositions2D_s((SVTL_VertexInfoReadOnly*)vi, (SVTL_F64Vec2*)positionsOut, buffSize);
     }
 }

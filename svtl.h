@@ -196,7 +196,7 @@ SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfoRea
 /// @param SVTL_VertexInfo* vi - vertex info
 /// @param SVTL_F64Vec2* positionsOut - the buffer to store the positions
 /// @return errno_t - error code: 0 on success, -1 upon failure */
-SVTL_API errno_t SVTL_ExtractVertexPositions2D(const struct SVTL_VertexInfoReadOnly* vi, struct SVTL_F64Vec2* positionsOut);
+SVTL_API errno_t SVTL_extractVertexPositions2D(const struct SVTL_VertexInfoReadOnly* vi, struct SVTL_F64Vec2* positionsOut);
 
 /*
 /// Extracts the positions of the given vertices and stores them in an array with a size of (vi.count * sizeof(SVTL_F64Vec2))
@@ -205,6 +205,6 @@ SVTL_API errno_t SVTL_ExtractVertexPositions2D(const struct SVTL_VertexInfoReadO
 /// @param SVTL_F64Vec2* positionsOut - the buffer to store the positions
 /// @param uint64_t posBuffSize - the size of the buffer to store the positions in bytes
 /// @return errno_t - error code: 0 on success, -1 upon failure */
-SVTL_API errno_t SVTL_ExtractVertexPositions2D_s(const struct SVTL_VertexInfoReadOnly* vi, struct SVTL_F64Vec2* positionsOut, uint64_t posBuffSize);
+SVTL_API errno_t SVTL_extractVertexPositions2D_s(const struct SVTL_VertexInfoReadOnly* vi, struct SVTL_F64Vec2* positionsOut, uint64_t posBuffSize);
 
 #endif /*!SVTL_H*/
