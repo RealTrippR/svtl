@@ -5,8 +5,8 @@ SVTL is a basic vertex transformation library written in C99. It provides a hand
 
 <ins> **Functions** </ins>
 
-```SVTL_init``` - Initializes SVTL </br>
-```SVTL_terminate``` - Terminates SVTL </br>
+```SVTL_register``` - Registers a usage of SVTL </br>
+```SVTL_unregister``` - Unregisters a usage of SVTL </br>
 ```SVTL_translate2D``` - translates by a given displacement </br>
 ```SVTL_rotate2D``` - rotates around the origin </br>
 ```SVTL_scale2D``` - scales relative to the origin </br>
