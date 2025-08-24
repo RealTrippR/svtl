@@ -1,6 +1,6 @@
-// Copyright 2020 Joshua J Baker. All rights reserved.
+/* Copyright 2020 Joshua J Baker. All rights reserved.
 // Use of this source code is governed by an MIT-style
-// license that can be found in the LICENSE file.
+// license that can be found in the LICENSE file. */
 
 #ifndef HASHMAP_H
 #define HASHMAP_H
@@ -11,7 +11,7 @@
 
 #if defined(__cplusplus)
 extern "C" {
-#endif  // __cplusplus
+#endif  /* __cplusplus */
 
 struct hashmap;
 
@@ -52,11 +52,11 @@ void hashmap_set_grow_by_power(struct hashmap *map, size_t power);
 void hashmap_set_load_factor(struct hashmap *map, double load_factor);
 
 
-// DEPRECATED: use `hashmap_new_with_allocator`
+/* DEPRECATED: use `hashmap_new_with_allocator` */
 void hashmap_set_allocator(void *(*malloc)(size_t), void (*free)(void*));
 
 #if defined(__cplusplus)
 }
-#endif  // __cplusplus
+#endif  /*__cplusplus*/
 
-#endif  // HASHMAP_H
+#endif  /*hashmap_h*/

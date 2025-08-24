@@ -99,15 +99,15 @@ namespace svtl
     /*
     /// Registers a usage of the Simple Vertex Transformation Library.
     /// @return errno_t - error code: 0 on success, -1 upon failure */
-    inline errno_t Register(void) {
-        return SVTL_Register();
+    inline errno_t register(void) {
+        return SVTL_register();
     }
 
    
     /*
     /// Unregisters a usage of the Simple Vertex Transformation Library.*/
-    inline void Unregister(void) {
-        SVTL_Unregister();
+    inline void unregister(void) {
+        SVTL_unregister();
     }
 
     /*
@@ -170,9 +170,9 @@ namespace svtl
     /// @param void* verticesOut - a buffer to hold the new list of vertices. It must have a size of vertexCountOut * vi.stride
     /// @param void* indicesOut - a buffer to hold the list of indices. It must have a size of indexCountOut * sizeof(u32)
     /// @param uint32_t* vertexCountOut - the count of the new list of vertices*/
-    inline void unindexedToIndexed2D(const struct VertexInfoReadOnly* vi, void* verticesOut, uint32_t* vertexCountOut, uint32_t* indicesOut, uint32_t* indexCountOut)
+    inline errno_t unindexedToIndexed2D(const struct VertexInfoReadOnly* vi, void* verticesOut, uint32_t* vertexCountOut, uint32_t* indicesOut, uint32_t* indexCountOut)
     {
-        unindexedToIndexed2D(vi, verticesOut, vertexCountOut, indicesOut, indexCountOut);
+        return SVTL_unindexedToIndexed2D((const SVTL_VertexInfoReadOnly*)vi, verticesOut, vertexCountOut, indicesOut, indexCountOut);
     }
 
 
@@ -182,7 +182,7 @@ namespace svtl
     /// @return double - the signed area of the polygon. */
     inline double findSignedArea(const struct VertexInfoReadOnly* vi)
     {
-        return SVTL_findSignedArea((SVTL_VertexInfoReadOnly*)vi);
+        return SVTL_findSignedArea((const SVTL_VertexInfoReadOnly*)vi);
     }
 
    /*
@@ -191,7 +191,7 @@ namespace svtl
     /// @return SVTL_F64Vec2 - the centroid of the polygon */
     inline F64Vec2 findCentroid2D(const struct VertexInfoReadOnly* vi)
     {
-        const SVTL_F64Vec2 v2 = SVTL_findCentroid2D((SVTL_VertexInfoReadOnly*)vi);
+        const SVTL_F64Vec2 v2 = SVTL_findCentroid2D((const SVTL_VertexInfoReadOnly*)vi);
         return {v2.x, v2.y};
     }
     
@@ -201,7 +201,7 @@ namespace svtl
     /// @param SVTL_F64Vec2* positionsOut - the buffer to store the positions*/
     inline errno_t extractVertexPositions2D(const struct VertexInfo* vi, F64Vec2* positionsOut)
     {
-        return SVTL_extractVertexPositions2D((SVTL_VertexInfoReadOnly*)vi, (SVTL_F64Vec2*)positionsOut);
+        return SVTL_extractVertexPositions2D((const SVTL_VertexInfoReadOnly*)vi, (SVTL_F64Vec2*)positionsOut);
     }
 
     /*
@@ -211,6 +211,6 @@ namespace svtl
     /// @param SVTL_F64Vec2* positionsOut - the buffer to store the positions*/
     inline errno_t extractVertexPositions2D_s(const struct VertexInfo* vi, F64Vec2* positionsOut, uint64_t buffSize)
     {
-        return SVTL_extractVertexPositions2D_s((SVTL_VertexInfoReadOnly*)vi, (SVTL_F64Vec2*)positionsOut, buffSize);
+        return SVTL_extractVertexPositions2D_s((const SVTL_VertexInfoReadOnly*)vi, (SVTL_F64Vec2*)positionsOut, buffSize);
     }
 }

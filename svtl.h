@@ -127,11 +127,11 @@ struct SVTL_VertexInfoReadOnly
 /*
 /// Registers a usage of the Simple Vertex Transformation Library.
 /// @return errno_t - error code: 0 on success, -1 upon failure */
-SVTL_API errno_t SVTL_Register(void);
+SVTL_API errno_t SVTL_register(void);
 
 /*
 /// Unregisters a usage of the Simple Vertex Transformation Library.*/
-SVTL_API void SVTL_Unregister(void);
+SVTL_API void SVTL_unregister(void);
 
 /*
 /// Translates the positions of the given vertices by displacement units.
@@ -178,7 +178,7 @@ SVTL_API errno_t SVTL_mirror2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64
 /// @param void* verticesOut - a buffer to hold the new list of vertices. It must have a size of vertexCountOut * vi.stride
 /// @param void* indicesOut - a buffer to hold the list of indices. It must have a size of indexCountOut * sizeof(u32)
 /// @param uint32_t* vertexCountOut - the count of the new list of vertices*/
-SVTL_API void SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly* vi, void* verticesOut, uint32_t* vertexCountOut, uint32_t* indicesOut, uint32_t* indexCountOut);
+SVTL_API errno_t SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly* vi, void* verticesOut, uint32_t* vertexCountOut, uint32_t* indicesOut, uint32_t* indexCountOut);
 
 /*
 /// Returns the signed area of a simple closed polygon.
