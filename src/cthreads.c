@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-
+//#define CTHREADS_DEBUG
 #ifndef _WIN32
   #include <errno.h>  /* errno */
   #include <string.h> /* strerror(), strlen() */
@@ -70,7 +70,7 @@ int cthreads_thread_detach(struct cthreads_thread thread) {
   #endif
 
   #ifdef _WIN32
-    return CloseHandle(thread.wThread);
+    return CloseHandle(thread.wThread)==0;
   #else
     return pthread_detach(thread.pThread);
   #endif

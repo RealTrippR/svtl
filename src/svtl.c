@@ -16,11 +16,14 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 */
 
 #include "../svtl.h"
-#include "cthreads.h"
+#include "threadpool.h"
 #include "hashmap.h"
+#include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <assert.h>
-#define SVTL_DEFAULT_THREAD_COUNT 2u
+#define TASK_COUNT 2u
+#define THREAD_TIMEOUT_MS 60000 // 20 seconds
 
 typedef	uint8_t u8;
 typedef int8_t i8;
@@ -34,49 +37,65 @@ typedef float f32;
 typedef double f64;
 
 
-struct SVTL_Instance {
-    struct cthreads_thread* threads;
-    u16 threadCount;
-};
-
 static u64 svtlUsageCount = 0u;
-struct SVTL_Instance instance = {NULL, 0};
+ThreadPoolHandle threadPool={0};
+bool threadPoolExists=false;
 
+static u16 taskHandleSize=sizeof(ThreadPoolTaskHandle);
+static errno_t(*launchTask)(SVTL_Task, SVTL_TaskHandle)=NULL;
+static errno_t(*joinTask)(SVTL_TaskHandle)=NULL;
+
+static errno_t defaultLaunchTask(SVTL_Task task, void* tphdl) {
+    ThreadPoolTask t = {task.args, task.func};
+    return ThreadPool_LaunchTask(threadPool, t,  tphdl);
+}
+static errno_t defaultJoinTask(void* tphdl) {
+    ThreadPool_JoinTask(tphdl);
+    return 0;
+}
+/*
+/// sets the callback to launch a task/thread.*/
+SVTL_API void SVTL_setTaskLaunchCallback(SVTL_LaunchTask_T cb) {
+    launchTask = cb;
+    if (launchTask!=defaultLaunchTask) {
+        if (threadPoolExists) {
+            ThreadPool_Destroy(&threadPool);
+            threadPoolExists=false;
+        }
+    } else {
+        if (!threadPoolExists) {
+            taskHandleSize=sizeof(ThreadPoolTaskHandle);
+            threadPool.threadCount = TASK_COUNT;
+            ThreadPool_New(&threadPool, THREAD_TIMEOUT_MS);
+            threadPoolExists=true;
+        }
+    }
+}
+
+/*
+/// sets the callback to join a task/thread. The argument of the function pointer should be a task handle.*/
+SVTL_API void SVTL_setTaskJoinCallback(SVTL_JoinTask_T cb) {
+    joinTask = cb;
+}
+
+SVTL_API void setTaskHandleSize(u16 size) {
+    taskHandleSize = size;
+}
 
 static void DBG_VALIDATE_INSTANCE_USAGE() {
     #ifndef NDEBUG
-        if (0u==instance.threadCount) {
-            assert(00&&"SVTL_Init() must be called before usage of any other SVTL functions.");
-        }
+       //if 
     #endif
-}
-
-static errno_t SVTL_createInstance(struct SVTL_Instance* _instance)
-{
-    if (_instance->threads)
-        return 0;
-    _instance->threadCount = SVTL_DEFAULT_THREAD_COUNT;
-    _instance->threads = malloc(_instance->threadCount * sizeof(_instance->threads[0]));
-    if (!_instance->threads)
-        return -1;
-    
-    return 0u;
-}
-
-static void SVTL_destroyInstance(struct SVTL_Instance* _instance)
-{
-    if (_instance->threads)
-        free(_instance->threads);
-
-    _instance->threads = NULL;
-    _instance->threadCount = 0u;
 }
 
 SVTL_API errno_t SVTL_register(void)
 {
     svtlUsageCount++;
     if (svtlUsageCount==1) {
-        return SVTL_createInstance(&instance);
+        if (launchTask==NULL) {
+            SVTL_setTaskLaunchCallback(defaultLaunchTask);
+            SVTL_setTaskJoinCallback(defaultJoinTask);
+        }
     }
     return 0;
 }
@@ -86,7 +105,12 @@ SVTL_API void SVTL_unregister(void)
     if (svtlUsageCount>0)
         svtlUsageCount--;
     if (svtlUsageCount==0) {
-        SVTL_destroyInstance(&instance);
+        if (threadPoolExists==true) {
+            ThreadPool_Destroy(&threadPool);
+            launchTask=NULL;
+            joinTask=NULL;
+            threadPoolExists=false;
+        }
     }
 }
 
@@ -128,7 +152,6 @@ static void* SVTL_translate2D_ThreadSegment(void *v)
 
 static u32 getSegmentSize(u32 count, u32 divisions, u32 divisionIdx)
 {
-
     i32 i = divisionIdx;
     i32 j = (count + 1) / divisions;
     i32 k = count - (i + 1) * j;
@@ -137,43 +160,49 @@ static u32 getSegmentSize(u32 count, u32 divisions, u32 divisionIdx)
     return j;
 }
 
+static u32 getSegmentSizeGrouped(u32 count, u32 groupSize, u32 divisions, u32 divisionIdx)
+{
+    u32 groupCount =  (count + groupSize - 1) / groupSize; /*ceil (count/groupSize)*/
+    u32 groupsInDiv = groupCount / divisions;
+    u32 groupRemainder = groupCount % divisions;
+    
+    if (divisionIdx < groupRemainder)
+        groupsInDiv += 1;
+    
+    
+    u32 max_ = groupsInDiv * groupSize * (divisionIdx+1);
+    return max_ > count ? groupSize-(max_-count) : groupsInDiv * groupSize;
+}
+
 SVTL_API errno_t SVTL_translate2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 displacement)
 {
     DBG_VALIDATE_INSTANCE_USAGE();
 
-    struct SVTL_translate2D_Args* dataList = malloc(sizeof(struct SVTL_translate2D_Args) * instance.threadCount);
-    struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
-    if (!dataList || !argList) {
+    struct SVTL_translate2D_Args* dataList = malloc(sizeof(struct SVTL_translate2D_Args) * TASK_COUNT);
+    SVTL_TaskHandle* taskHandles = malloc(taskHandleSize * TASK_COUNT);
+    if (!dataList || !taskHandles) {
         return -1;
     }
 
     u8 i;
-    for (i=0; i < instance.threadCount; ++i)
-    {
-        struct cthreads_args* args = argList + i;
+    for (i=0; i < TASK_COUNT; ++i) {
+        SVTL_Task task;
         struct SVTL_translate2D_Args* fData = &dataList[i];
         fData->vi = vi;
-        fData->firstVertexIndex = i * (vi->count + 1) / instance.threadCount;
-        fData->vertexCount = getSegmentSize(vi->count, instance.threadCount, i);
+        fData->firstVertexIndex = i * (vi->count + 1) / TASK_COUNT;
+        fData->vertexCount = getSegmentSize(vi->count, TASK_COUNT, i);
         fData->displacement = displacement;
-        args->data = fData;
-        args->func = SVTL_translate2D_ThreadSegment;
-        cthreads_thread_create(instance.threads + i, NULL, args->func, args->data, args);
+        task.args = fData;
+        task.func = SVTL_translate2D_ThreadSegment;
+        launchTask(task,(u8*)taskHandles+(i*taskHandleSize));
     }
 
-    for (i = 0; i < instance.threadCount; ++i) 
-    {
-        int exitCode=0;
-        cthreads_thread_join(instance.threads[i], &exitCode);
-        if (exitCode != 0) {
-            free(dataList);
-            free(argList);
-            return -1;
-        }
+    for (i = 0; i < TASK_COUNT; ++i) {
+        joinTask((u8*)taskHandles+(i*taskHandleSize));
     }
 
     free(dataList);
-    free(argList);
+    free(taskHandles);
     return 0;
 }
 
@@ -231,40 +260,34 @@ SVTL_API errno_t SVTL_rotate2D(const struct SVTL_VertexInfo* vi, f64 radians, st
 {
     DBG_VALIDATE_INSTANCE_USAGE();
 
-    struct SVTL_rotate2D_Args* dataList = malloc(sizeof(struct SVTL_rotate2D_Args) * instance.threadCount);
-    struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
-    if (!dataList || !argList) {
+    struct SVTL_rotate2D_Args* argList = malloc(sizeof(struct SVTL_rotate2D_Args) * TASK_COUNT);
+    SVTL_TaskHandle* taskHandles = malloc(taskHandleSize * TASK_COUNT);
+    if (!argList || !taskHandles) {
         return -1;
     }
 
     u8 i;
-    for (i = 0; i < instance.threadCount; ++i)
+    for (i = 0; i < TASK_COUNT; ++i)
     {
-        struct cthreads_args* args = argList + i;
-        struct SVTL_rotate2D_Args* fData = &dataList[i];
+        SVTL_Task task;
+        struct SVTL_rotate2D_Args* fData = &argList[i];
         fData->vi = vi;
-        fData->firstVertexIndex = i * (vi->count + 1) / instance.threadCount;
-        fData->vertexCount = getSegmentSize(vi->count, instance.threadCount, i);
+        fData->firstVertexIndex = i * (vi->count + 1) / TASK_COUNT;
+        fData->vertexCount = getSegmentSize(vi->count, TASK_COUNT, i);
         fData->radians = radians;
         fData->origin = origin;
-        args->data = fData;
-        args->func = SVTL_rotate2D_ThreadSegment;
-        cthreads_thread_create(instance.threads + i, NULL, args->func, args->data, args);
+        task.args = fData;
+        task.func = SVTL_rotate2D_ThreadSegment;
+        launchTask(task,(u8*)taskHandles+(i*taskHandleSize));
     }
 
-    for (i = 0; i < instance.threadCount; ++i)
+    for (i = 0; i < TASK_COUNT; ++i)
     {
-        int exitCode = 0;
-        cthreads_thread_join(instance.threads[i], &exitCode);
-        if (exitCode != 0) {
-            free(dataList);
-            free(argList);
-            return -1;
-        }
+        joinTask((u8*)taskHandles+(i*taskHandleSize));
     }
 
-    free(dataList);
     free(argList);
+    free(taskHandles);
     return 0;
 }
 
@@ -315,40 +338,34 @@ static void* SVTL_scale2D_ThreadSegment(void* v)
 
 SVTL_API errno_t SVTL_scale2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Vec2 scaleFactor, struct SVTL_F64Vec2 origin)
 {
-    struct SVTL_scale2D_Args* dataList = malloc(sizeof(struct SVTL_scale2D_Args) * instance.threadCount);
-    struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
-    if (!dataList || !argList) {
+    struct SVTL_scale2D_Args* argList = malloc(sizeof(struct SVTL_scale2D_Args) * TASK_COUNT);
+    SVTL_TaskHandle* taskHandles = malloc(taskHandleSize * TASK_COUNT);
+    if (!argList || !taskHandles) {
         return -1;
     }
 
     u8 i;
-    for (i = 0; i < instance.threadCount; ++i)
+    for (i = 0; i < TASK_COUNT; ++i)
     {
-        struct cthreads_args* args = argList + i;
-        struct SVTL_scale2D_Args* fData = &dataList[i];
+        SVTL_Task task;
+        struct SVTL_scale2D_Args* fData = &argList[i];
         fData->vi = vi;
-        fData->firstVertexIndex = i * (vi->count + 1) / instance.threadCount;
-        fData->vertexCount = getSegmentSize(vi->count, instance.threadCount, i);
+        fData->firstVertexIndex = i * (vi->count + 1) / TASK_COUNT;
+        fData->vertexCount = getSegmentSize(vi->count, TASK_COUNT, i);
         fData->scaleFactor = scaleFactor;
         fData->origin = origin;
-        args->data = fData;
-        args->func = SVTL_scale2D_ThreadSegment;
-        cthreads_thread_create(instance.threads + i, NULL, args->func, args->data, args);
+        task.args = fData;
+        task.func = SVTL_scale2D_ThreadSegment;
+        launchTask(task,(u8*)taskHandles+(i*taskHandleSize));
     }
 
-    for (i = 0; i < instance.threadCount; ++i)
+    for (i = 0; i < TASK_COUNT; ++i)
     {
-        int exitCode = 0;
-        cthreads_thread_join(instance.threads[i], &exitCode);
-        if (exitCode != 0) {
-            free(dataList);
-            free(argList);
-            return -1;
-        }
+        joinTask((u8*)taskHandles+(i*taskHandleSize));
     }
 
-    free(dataList);
     free(argList);
+    free(taskHandles);
     return 0;
 }
 struct SVTL_skew2D_Args
@@ -404,39 +421,33 @@ SVTL_API errno_t SVTL_skew2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64Ve
 {
     DBG_VALIDATE_INSTANCE_USAGE();
 
-    struct SVTL_skew2D_Args* dataList = malloc(sizeof(struct SVTL_skew2D_Args) * instance.threadCount);
-    struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
-    if (!dataList || !argList) {
+    struct SVTL_skew2D_Args* argList = malloc(sizeof(struct SVTL_skew2D_Args) * TASK_COUNT);
+    SVTL_TaskHandle* taskHandles = malloc(taskHandleSize * TASK_COUNT);
+    if (!argList || !taskHandles) {
         return -1;
     }
 
     u8 i;
-    for (i = 0; i < instance.threadCount; ++i)
+    for (i = 0; i < TASK_COUNT; ++i)
     {
-        struct cthreads_args* args = argList + i;
-        struct SVTL_skew2D_Args* fData = &dataList[i];
+        SVTL_Task task;
+        struct SVTL_skew2D_Args* fData = &argList[i];
         fData->vi = vi;
-        fData->firstVertexIndex = i * (vi->count + 1) / instance.threadCount;
-        fData->vertexCount = getSegmentSize(vi->count, instance.threadCount, i);
+        fData->firstVertexIndex = i * (vi->count + 1) / TASK_COUNT;
+        fData->vertexCount = getSegmentSize(vi->count, TASK_COUNT, i);
         fData->skewFactor = skewFactor;
         fData->origin = origin;
-        args->data = fData;
-        args->func = SVTL_skew2D_ThreadSegment;
-        cthreads_thread_create(instance.threads + i, NULL, args->func, args->data, args);
+        task.args = fData;
+        task.func = SVTL_skew2D_ThreadSegment;
+        launchTask(task,(u8*)taskHandles+(i*taskHandleSize));
     }
 
-    for (i = 0; i < instance.threadCount; ++i)
+    for (i = 0; i < TASK_COUNT; ++i)
     {
-        int exitCode = 0;
-        cthreads_thread_join(instance.threads[i], &exitCode);
-        if (exitCode != 0) {
-            free(dataList);
-            free(argList);
-            return -1;
-        }
+        joinTask((u8*)taskHandles+(i*taskHandleSize));
     }
 
-    free(dataList);
+    free(taskHandles);
     free(argList);
     return 0;
 }
@@ -464,14 +475,14 @@ static void* SVTL_mirror2D_ThreadSegment(void*__args)
         for (; i < end; ++i)
         {
             struct SVTL_F32Vec2* pos = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
-            pos->x -= mirrorLine.center.x;
-            pos->y-= mirrorLine.center.y;
+            pos->x -= (f32)mirrorLine.center.x;
+            pos->y -= (f32)mirrorLine.center.y;
 
-            f32 rx = pos->x * c + pos->y * s;
-            f32 ry = pos->x * -s - pos->y * -c;
+            f32 rx = (f32)(pos->x * c + pos->y * s);
+            f32 ry = (f32)(pos->x * -s - pos->y * -c);
 
-            pos->x = c * rx - s * ry + mirrorLine.center.x;
-            pos->y = s * rx + c * ry + mirrorLine.center.y;
+            pos->x = (f32)(c * rx - s * ry + mirrorLine.center.x);
+            pos->y = (f32)(s * rx + c * ry + mirrorLine.center.y);
         }
     }
     else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
@@ -496,38 +507,32 @@ SVTL_API errno_t SVTL_mirror2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64
 {
     DBG_VALIDATE_INSTANCE_USAGE();
 
-    struct SVTL_mirror2D_Args* dataList = malloc(sizeof(struct SVTL_mirror2D_Args) * instance.threadCount);
-    struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
-    if (!dataList || !argList) {
+    struct SVTL_mirror2D_Args* argList = malloc(sizeof(struct SVTL_mirror2D_Args) * TASK_COUNT);
+    SVTL_TaskHandle* taskHandles = malloc(taskHandleSize * TASK_COUNT);
+    if (!argList || !taskHandles) {
         return -1;
     }
 
     u8 i;
-    for (i = 0; i < instance.threadCount; ++i)
+    for (i = 0; i < TASK_COUNT; ++i)
     {
-        struct cthreads_args* args = argList + i;
-        struct SVTL_mirror2D_Args* fData = &dataList[i];
+        SVTL_Task task;
+        struct SVTL_mirror2D_Args* fData = &argList[i];
         fData->vi = vi;
-        fData->firstVertexIndex = i * (vi->count + 1) / instance.threadCount;
-        fData->vertexCount = getSegmentSize(vi->count, instance.threadCount, i);
+        fData->firstVertexIndex = i * (vi->count + 1) / TASK_COUNT;
+        fData->vertexCount = getSegmentSize(vi->count, TASK_COUNT, i);
         fData->mirrorLine = mirrorLine;
-        args->data = fData;
-        args->func = SVTL_mirror2D_ThreadSegment;
-        cthreads_thread_create(instance.threads + i, NULL, args->func, args->data, args);
+        task.args = fData;
+        task.func = SVTL_mirror2D_ThreadSegment;
+        launchTask(task,(u8*)taskHandles+(i*taskHandleSize));
     }
 
-    for (i = 0; i < instance.threadCount; ++i)
-    {
-        int exitCode = 0;
-        cthreads_thread_join(instance.threads[i], &exitCode);
-        if (exitCode != 0) {
-            free(dataList);
-            free(argList);
-            return -1;
-        }
+    for (i = 0; i < TASK_COUNT; ++i) {
+        joinTask((u8*)taskHandles+(i*taskHandleSize));
     }
 
-    free(dataList);
+
+    free(taskHandles);
     free(argList);
     return 0;
 }
@@ -550,7 +555,7 @@ uint64_t user_hash(const void *item, uint64_t seed0, uint64_t seed1)
 int user_compare(const void *a, const void *b, void *udata) {
     const struct vertexHashmapPair *pairA = a;
     const struct vertexHashmapPair *pairB = b;
-
+    
     return memcmp(&pairA->pos, &pairB->pos, sizeof(pairA->pos));
 }
 
@@ -576,18 +581,25 @@ SVTL_API errno_t SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly*
         }
     }
 
+    if (hashmap_count(map) >UINT32_MAX-64) 
+    {
+        hashmap_free(map);
+        return -1;
+    }
+
     size_t iter = 0;
     void *item;
     while (hashmap_iter(map, &iter, &item)) {
         struct vertexHashmapPair *pair = item;
-        pair->vIndex = iter;
+        pair->vIndex = (u32)iter;
         
         if (verticesOut) {
             memcpy((u8*)verticesOut + iter, pair->vertex, vi->stride);
         }
     }
+
     if (vertexCountOut)
-        *vertexCountOut = iter+1;
+        *vertexCountOut = (u32)(iter+1);
 
     if (indexCountOut)
         *indexCountOut = vi->count;
@@ -618,76 +630,280 @@ SVTL_API errno_t SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly*
     return 0;
 }
 
-SVTL_API f64 SVTL_findSignedArea(const struct SVTL_VertexInfoReadOnly* vi)
+struct SVTL_findSignedArea_Args
 {
-    /*uses the shoelace formula*/
-    DBG_VALIDATE_INSTANCE_USAGE();
+    const struct SVTL_VertexInfoReadOnly* vi;
+    u32 firstIndex; u32 count;
+    f64* areaOut;
+};
 
-    const void* vertices = vi->vertices;
+SVTL_API void* SVTL_findSignedArea_ThreadSegment(void* __args)
+{
+    struct SVTL_findSignedArea_Args* args = __args;
+    const struct SVTL_VertexInfoReadOnly* vi = args->vi;
+    u32 firstIndex = args->firstIndex;
+    u32 count = args->count;
+    u32 i;
+    const u32 end = firstIndex + count;
 
-    f64 area = 0.0;
-
-    u32 i = 0;
-    if (vi->positionType == SVTL_POS_TYPE_VEC2_F32) {
-        for (; i < vi->count; ++i)
-        {
-            const struct SVTL_F32Vec2* pos = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
-            const struct SVTL_F32Vec2* posNext = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * ((i + 1) % vi->count)) + vi->positionOffset);
-            area +=  (pos->x * posNext->y - posNext->x * pos->y);
-        }
-    }
-    else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
+ 
+    u32 idxA=0u;
+    u32 idxB=0u;
+    u32 idxC=0u;
+    if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_FAN)
     {
-         for (; i < vi->count; ++i)
+        if (vi->indices != NULL) 
         {
-            const struct SVTL_F64Vec2* pos = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
-            const struct SVTL_F64Vec2* posNext = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * ((i + 1) % vi->count)) + vi->positionOffset);
-            area +=  (pos->x * posNext->y - posNext->x * pos->y);
+            if (vi->indexType == SVTL_INDEX_TYPE_U16)
+            {
+                idxA = *(u16*)vi->indices;
+            }
+             else {
+                idxA = *(u32*)vi->indices; 
+            }
+        }
+    } else if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_STRIP)
+    {
+        if (firstIndex < 2) {
+            firstIndex = 2;
         }
     }
 
-    area *= 0.5;
-    return area;
+    for (i = firstIndex; i < end;)
+    {
+        if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_LIST)
+        { 
+           
+            if (vi->indices != NULL) 
+            {
+                if (vi->indexType == SVTL_INDEX_TYPE_U16) {
+                    idxA = *((u16*)vi->indices + i);
+                    idxB = *((u16*)vi->indices + (i + 1));
+                    idxC = *((u16*)vi->indices + (i + 2));
+
+                    if (vi->primitiveRestartEnabled) {
+                        if (idxA == 0xFFFF) {
+                            i++;
+                            continue;
+                        }
+                    }
+                } else {
+                    idxA = *((u32*)vi->indices + i);
+                    idxB = *((u32*)vi->indices + (i + 1));
+                    idxC = *((u32*)vi->indices + (i + 2));
+
+                    if (vi->primitiveRestartEnabled) {
+                        if (idxA == 0xFFFFFFFF) {
+                            i++;
+                            continue;
+                        }
+                    }
+                }
+
+               
+            } else {
+                idxA = i;
+                idxB = i+1;
+                idxC = i+2;
+            }
+        }
+        else if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_STRIP)
+        {
+            if (vi->indices !=NULL)
+            {
+                if (vi->indexType==SVTL_INDEX_TYPE_U16)
+                {
+                    idxC = *((u16*)vi->indices + i - 2);
+                    idxB = *((u16*)vi->indices + i - 1);
+                    idxA = *((u16*)vi->indices + i);
+                } else {
+                    idxC = *((u32*)vi->indices + i - 2);
+                    idxB = *((u32*)vi->indices + i - 1);
+                    idxA = *((u32*)vi->indices + i);
+                }
+            } else {
+                idxC = i-2;
+                idxB = i-1;
+                idxA = i;
+            }
+        } 
+        else if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_FAN)
+        {
+            if (vi->indices != NULL) 
+            {
+                if (vi->indexType == SVTL_INDEX_TYPE_U16)
+                {
+                    idxB = *((u16*)vi->indices + i);
+                    idxC = *((u16*)vi->indices + i + 1);
+
+                    if (vi->primitiveRestartEnabled) {
+                        if (idxB == 0xFFFF) {
+                            i++;
+                            continue;
+                        }
+                    }
+                } 
+                else {
+                    idxB = *((u32*)vi->indices + i);
+                    idxC = *((u32*)vi->indices + i + 1);
+
+                    if (vi->primitiveRestartEnabled) {
+                        if (idxC == 0xFFFFFFFF) {
+                            i++;
+                            continue;
+                        }
+                    }  
+                }
+            }
+            else {
+                idxB = i;
+                idxC = i+1;
+            }
+        }
+
+        if (vi->positionType == SVTL_POS_TYPE_VEC2_F32)
+        {
+            struct SVTL_F32Vec2* posA = (struct SVTL_F32Vec2*)((u8*)vi->vertices + (vi->stride * idxA) + vi->positionOffset);
+            struct SVTL_F32Vec2* posB = (struct SVTL_F32Vec2*)((u8*)vi->vertices + (vi->stride * idxB) + vi->positionOffset);
+            struct SVTL_F32Vec2* posC = (struct SVTL_F32Vec2*)((u8*)vi->vertices + (vi->stride * idxC) + vi->positionOffset);
+
+            /*www.omnicalculator.com/math/area-triangle-coordinates*/
+            f64 a = 0.5 * (posA->x * (posB->y - posC->y) + posB->x * (posC->y - posA->y) + posC->x * (posA->y - posB->y));
+            *args->areaOut += a;
+        }
+        else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
+        {
+            struct SVTL_F64Vec2* posA = (struct SVTL_F64Vec2*)((u8*)vi->vertices + (vi->stride * idxA) + vi->positionOffset);
+            struct SVTL_F64Vec2* posB = (struct SVTL_F64Vec2*)((u8*)vi->vertices + (vi->stride * idxB) + vi->positionOffset);
+            struct SVTL_F64Vec2* posC = (struct SVTL_F64Vec2*)((u8*)vi->vertices + (vi->stride * idxC) + vi->positionOffset);
+
+            /*www.omnicalculator.com/math/area-triangle-coordinates*/
+            f64 a = 0.5 * (posA->x * (posB->y - posC->y) + posB->x * (posC->y - posA->y) + posC->x * (posA->y - posB->y));
+            *args->areaOut +=a;
+        }
+
+        if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_LIST)
+        {
+            i+=3;
+        } else if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_STRIP)
+        {
+            i++;
+        } else if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_FAN)
+        {
+            i++;
+        } else {
+            break;
+        }
+    }
+
+    return NULL;
 }
 
-SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfoReadOnly* vi)
+SVTL_API f64 SVTL_findSignedArea(const struct SVTL_VertexInfoReadOnly* vi, errno_t* err)
 {
     DBG_VALIDATE_INSTANCE_USAGE();
 
-    /* https://en.wikipedia.org/wiki/Centroid#Of_a_polygon */
+    struct SVTL_findSignedArea_Args* argList = malloc(sizeof(argList[0]) * TASK_COUNT);
+    SVTL_TaskHandle* taskHandles = malloc(taskHandleSize * TASK_COUNT);
+    f64* areaList = calloc(TASK_COUNT,sizeof(f64));
 
-    const void* vertices = vi->vertices;
-
-    const f64 a = SVTL_findSignedArea(vi);
-
-    f64 sumX=0.0;
-    f64 sumY=0.0;
-    u32 i = 0;
-    if (vi->positionType == SVTL_POS_TYPE_VEC2_F32)
-     {
-        for (; i < vi->count; ++i)
-        {
-            const struct SVTL_F32Vec2* pos = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
-            const struct SVTL_F32Vec2* posNext = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * ((i+1) % vi->count)) + vi->positionOffset);
-            sumX += (pos->x + posNext->x) * (pos->x*posNext->y - posNext->x*pos->y);
-            sumY += (pos->y + posNext->y) * (pos->x * posNext->y - posNext->x * pos->y);
-        }
+    if (!taskHandles || !argList || !areaList) {
+        if (err)
+            *err = -1;
+        return 0.0;
     }
-    else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
+
+    if (vi->count<3) {
+        if (err)
+            *err = -2;
+        return 0;
+    }
+    u8 i;
+    for (i = 0; i < TASK_COUNT; ++i)
     {
-        for (; i < vi->count; ++i)
-        {
-            const struct SVTL_F64Vec2* pos = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
-            const struct SVTL_F64Vec2* posNext = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * ((i+1) % vi->count)) + vi->positionOffset);
-            sumX += (pos->x + posNext->x) * (pos->x*posNext->y - posNext->x*pos->y);
-            sumY += (pos->y + posNext->y) * (pos->x * posNext->y - posNext->x * pos->y);
-        }
+        SVTL_Task task;
+        struct SVTL_findSignedArea_Args* fData = &argList[i];
+        fData->vi = vi;
+        fData->firstIndex = i * (vi->count + 1) / TASK_COUNT;
+        fData->count = getSegmentSizeGrouped(vi->count, 3, TASK_COUNT, i);
+        fData->areaOut = areaList + i;
+        task.args = fData;
+        task.func = SVTL_findSignedArea_ThreadSegment;
+        launchTask(task,(u8*)taskHandles+(i*taskHandleSize));
     }
-        
-  
-    struct SVTL_F64Vec2 retV;
-    retV.x = (1.0 / (6.0*a)) * sumX;
-    retV.y = (1.0 / (6.0*a)) * sumY;
+
+    for (i = 0; i < TASK_COUNT; ++i) {
+        u64 offset = (i*taskHandleSize);
+        joinTask((u8*)taskHandles+offset);
+    }
+
+    free(taskHandles);
+    free(argList);
+
+    if (err)
+        *err=0;
+
+    f64 areaSum = 0.0;
+    for (i = 0; i < TASK_COUNT; ++i)
+    {
+        areaSum += areaList[i];
+    }
+
+    free(areaList);
+
+    return areaSum;
+}
+
+struct SVTL_findCentroid2D_Args
+{
+    const struct SVTL_VertexInfoReadOnly* vi;
+    u32 firstVertexIndex; u32 vertexCount;
+};
+
+SVTL_API void* SVTL_findCentroid2D_ThreadSegment(void* __args)
+{
+    return NULL;
+}
+
+SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfoReadOnly* vi, errno_t* err)
+{
+    
+    struct SVTL_F64Vec2 retV = {0,0};
+    
+    DBG_VALIDATE_INSTANCE_USAGE();
+
+    struct SVTL_findSignedArea_Args* dataList = malloc(sizeof(struct SVTL_findSignedArea_Args) * TASK_COUNT);
+    SVTL_TaskHandle* taskHandles = malloc(taskHandleSize * TASK_COUNT);
+    if (!dataList || !taskHandles) {
+        if (err)
+            *err = -1;
+        return retV;
+    }
+
+    u8 i;
+    for (i = 0; i < TASK_COUNT; ++i)
+    {
+        SVTL_Task task;
+        struct SVTL_findSignedArea_Args* fData = &dataList[i];
+        fData->vi = vi;
+        /*fData->firstVertexIndex = i * (vi->count + 1) / instance.threadCount;
+        fData->vertexCount = getSegmentSize(vi->count, instance.threadCount, i);
+        fData->vertexCount;*/
+        task.args = fData;
+        task.func = SVTL_skew2D_ThreadSegment;
+        launchTask(task, taskHandles+i);
+    }
+
+    for (i = 0; i < TASK_COUNT; ++i) {
+       joinTask(taskHandles+i);
+    }
+
+    free(dataList);
+    free(taskHandles);
+
+    if (err)
+        *err=0;
+
     return retV;
 }
 
@@ -731,39 +947,33 @@ SVTL_API errno_t SVTL_extractVertexPositions2D(const struct SVTL_VertexInfoReadO
 {
     DBG_VALIDATE_INSTANCE_USAGE();
 
-    struct SVTL_ExtractVertexPositions2D_Args* dataList = malloc(sizeof(struct SVTL_ExtractVertexPositions2D_Args) * instance.threadCount);
-    struct cthreads_args* argList = malloc(sizeof(struct cthreads_args) * instance.threadCount);
-    if (!dataList || !argList) {
+    struct SVTL_ExtractVertexPositions2D_Args* dataList = malloc(sizeof(struct SVTL_ExtractVertexPositions2D_Args) * TASK_COUNT);
+    SVTL_TaskHandle* taskHandles = malloc(taskHandleSize * TASK_COUNT);
+    if (!dataList || !taskHandles) {
         return -1;
     }
 
     u8 i;
-    for (i = 0; i < instance.threadCount; ++i)
+    for (i = 0; i < TASK_COUNT; ++i)
     {
-        struct cthreads_args* args = argList + i;
+        SVTL_Task task;
         struct SVTL_ExtractVertexPositions2D_Args* fData = &dataList[i];
         fData->vi = vi;
         fData->positionsOut = positionsOut;
-        fData->firstVertexIndex = i * (vi->count + 1) / instance.threadCount;
-        fData->vertexCount = getSegmentSize(vi->count, instance.threadCount, i);
-        args->data = fData;
-        args->func = SVTL_skew2D_ThreadSegment;
-        cthreads_thread_create(instance.threads + i, NULL, args->func, args->data, args);
+        fData->firstVertexIndex = i * (vi->count + 1) / TASK_COUNT;
+        fData->vertexCount = getSegmentSize(vi->count, TASK_COUNT, i);
+        task.args = fData;
+        task.func = SVTL_skew2D_ThreadSegment;
+        launchTask(task, taskHandles+i);
     }
 
-    for (i = 0; i < instance.threadCount; ++i)
+    for (i = 0; i < TASK_COUNT; ++i)
     {
-        int exitCode = 0;
-        cthreads_thread_join(instance.threads[i], &exitCode);
-        if (exitCode != 0) {
-            free(dataList);
-            free(argList);
-            return -1;
-        }
+        joinTask(taskHandles+i);
     }
 
     free(dataList);
-    free(argList);
+    free(taskHandles);
     return 0;
 }
 

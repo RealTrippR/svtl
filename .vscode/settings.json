@@ -4,6 +4,7 @@
         "*.ejs": "html",
         "cthreads.h": "c",
         "errno.h": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "assert.h": "c"
     }
 }

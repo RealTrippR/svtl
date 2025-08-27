@@ -47,7 +47,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 
 #include <errno.h>
 #include <stdint.h>
-
+#include <stdbool.h>
 
 struct SVTL_F32Vec2
 {
@@ -110,6 +110,7 @@ struct SVTL_VertexInfo
     enum SVTL_IndexType indexType;
     enum SVTL_TopologyType topologyType;
     uint32_t positionOffset;
+    bool primitiveRestartEnabled;
 };
 
 struct SVTL_VertexInfoReadOnly
@@ -122,7 +123,31 @@ struct SVTL_VertexInfoReadOnly
     enum SVTL_IndexType indexType;
     enum SVTL_TopologyType topologyType;
     uint32_t positionOffset;
+    bool primitiveRestartEnabled;
 };
+
+
+typedef struct 
+{
+    void* args;
+    void*(*func)(void*);
+} SVTL_Task;
+
+typedef void* SVTL_TaskHandle;
+
+typedef errno_t (*SVTL_LaunchTask_T)(SVTL_Task, SVTL_TaskHandle);
+
+typedef errno_t (*SVTL_JoinTask_T)(SVTL_TaskHandle);
+
+/*
+/// sets the callback to launch a task/thread.*/
+SVTL_API void SVTL_setTaskLaunchCallback(SVTL_LaunchTask_T cb);
+
+/*
+/// sets the callback to join a task/thread. The argument of the function pointer should be a task handle.*/
+SVTL_API void SVTL_setTaskJoinCallback(SVTL_JoinTask_T cb);
+
+SVTL_API void setTaskHandleSize(uint16_t bytes);
 
 /*
 /// Registers a usage of the Simple Vertex Transformation Library.
@@ -184,13 +209,13 @@ SVTL_API errno_t SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly*
 /// Returns the signed area of a simple closed polygon.
 /// @param SVTL_VertexInfo* vi - vertex info
 /// @return double - the signed area of the polygon */
-SVTL_API double SVTL_findSignedArea(const struct SVTL_VertexInfoReadOnly* vi);
+SVTL_API double SVTL_findSignedArea(const struct SVTL_VertexInfoReadOnly* vi, errno_t* err);
 
 /*
 /// Returns the centroid of a simple closed polygon.
 /// @param SVTL_VertexInfo* vi - vertex info
 /// @return SVTL_F64Vec2 - the centroid of the polygon */
-SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfoReadOnly* vi);
+SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfoReadOnly* vi, errno_t* err);
 
 /*
 /// Extracts the positions of the given vertices and stores them in an array with a size of (vi.count * sizeof(SVTL_F64Vec2))

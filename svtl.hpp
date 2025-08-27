@@ -65,7 +65,7 @@ namespace svtl
         U32,
     };
 
-    enum TOPOLOGY_TYOE
+    enum TOPOLOGY_TYPE
     {
         TriangleList,
         TriangleStrip,
