@@ -1,7 +1,7 @@
 ## Simple Vertex Transformation Library ##
 <ins> Brief </ins>
 
-SVTL is a basic vertex transformation library written in C89. It provides a handful of functions to perform basic geometric transformations on vertices.
+SVTL is a basic vertex transformation library written in C11. It provides a handful of functions to perform basic geometric transformations on vertices.
 
 <ins> **Functions** </ins>
 
@@ -12,7 +12,7 @@ SVTL is a basic vertex transformation library written in C89. It provides a hand
 ```SVTL_scale2D``` - scales relative to the origin </br>
 ```SVTL_skew2D``` - skews relative to the origin </br>
 ```SVTL_mirror2D``` - mirrors around a given line </br>
-```SVTL_unindexedToIndexed2D``` - converts a list of unindexed vertices to indexed vertices
+```SVTL_unindexedToIndexed2D``` - converts a list of unindexed vertices to indexed vertices </br>
 ```SVTL_findSignedArea``` - returns the signed area of a simple closed polygon </br>
 ```SVTL_findCentroid2D``` - returns the centroid of a simple closed polygon </br>
 ```SVTL_extractVertexPositions2D``` - writes vertex positions to a buffer </br>
