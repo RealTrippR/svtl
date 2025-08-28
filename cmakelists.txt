@@ -10,12 +10,18 @@ add_library(SVTL_STATIC STATIC
     src/svtl.c
     src/cthreads.c
     src/hashmap.c
+    src/threadpool.c.obj
 )
 add_library(SVTL_SHARED SHARED
     src/svtl.c
     src/cthreads.c
     src/hashmap.c
+    src/threadpool.c.obj
 )
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-O2)
+endif()
+
 target_include_directories(SVTL_STATIC PUBLIC
     ${PROJECT_SOURCE_DIR}
 )

@@ -648,6 +648,27 @@ SVTL_API void* SVTL_findSignedArea_ThreadSegment(void* __args)
     u32 i;
     const u32 end = firstIndex + count;
 
+    if (vi->topologyType==SVTL_TOPOLOGY_TYPE_POINT_LIST)
+    {
+        f64 area = 0.0;
+        for (i = firstIndex; i < end; ++i)
+        {
+            if (vi->positionType == SVTL_POS_TYPE_VEC2_F32)
+            {
+                struct SVTL_F32Vec2* posA = (struct SVTL_F32Vec2*)((u8*)vi->vertices + (vi->stride * i) + vi->positionOffset);
+                struct SVTL_F32Vec2* posB = (struct SVTL_F32Vec2*)((u8*)vi->vertices + (vi->stride * ((i+1)%vi->count) ) + vi->positionOffset);
+                area += (posA->x * posB->y - posB->x * posA->y);
+            }
+            else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64) {
+                struct SVTL_F64Vec2* posA = (struct SVTL_F64Vec2*)((u8*)vi->vertices + (vi->stride * i) + vi->positionOffset);
+                struct SVTL_F64Vec2* posB = (struct SVTL_F64Vec2*)((u8*)vi->vertices + (vi->stride * ((i+1)%vi->count) ) + vi->positionOffset);
+                area += (posA->x * posB->y - posB->x * posA->y);
+            }
+        }
+        *args->areaOut = area;
+        return NULL;
+    }
+
  
     u32 idxA=0u;
     u32 idxB=0u;
@@ -848,7 +869,11 @@ SVTL_API f64 SVTL_findSignedArea(const struct SVTL_VertexInfoReadOnly* vi, errno
     f64 areaSum = 0.0;
     for (i = 0; i < TASK_COUNT; ++i)
     {
-        areaSum += areaList[i];
+        if (vi->topologyType==SVTL_TOPOLOGY_TYPE_POINT_LIST) {
+            areaSum += areaList[i]/6.0;
+        } else {
+            areaSum += areaList[i];
+        }
     }
 
     free(areaList);
@@ -873,6 +898,32 @@ SVTL_API void* SVTL_findCentroid2D_ThreadSegment(void* __args)
     u32 i;
     const u32 end = firstIndex + count;
 
+    if (vi->topologyType==SVTL_TOPOLOGY_TYPE_POINT_LIST)
+    {
+        f64 area = 0.0;
+        struct SVTL_F64Vec2 c = {0,0};
+        for (i = firstIndex; i < end; ++i)
+        {
+            if (vi->positionType == SVTL_POS_TYPE_VEC2_F32)
+            {
+                struct SVTL_F32Vec2* posA = (struct SVTL_F32Vec2*)((u8*)vi->vertices + (vi->stride * i) + vi->positionOffset);
+                struct SVTL_F32Vec2* posB = (struct SVTL_F32Vec2*)((u8*)vi->vertices + (vi->stride * ((i+1)%vi->count) ) + vi->positionOffset);
+                area += (posA->x * posB->y - posB->x * posA->y);
+                c.x += (posA->x + posB->x) * (posA->x * posB->y - posB->x * posA->y);
+                c.y += (posA->y + posB->y) * (posA->x * posB->y - posB->x * posA->y);
+            }
+            else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64) {
+                struct SVTL_F64Vec2* posA = (struct SVTL_F64Vec2*)((u8*)vi->vertices + (vi->stride * i) + vi->positionOffset);
+                struct SVTL_F64Vec2* posB = (struct SVTL_F64Vec2*)((u8*)vi->vertices + (vi->stride * ((i+1)%vi->count) ) + vi->positionOffset);
+                area += (posA->x * posB->y - posB->x * posA->y);
+                c.x += (posA->x + posB->x) * (posA->x * posB->y - posB->x * posA->y);
+                c.y += (posA->y + posB->y) * (posA->x * posB->y - posB->x * posA->y);
+            }
+        }
+        *args->areaOut = area * 0.5;
+        *args->centroidSumOut = c;
+        return NULL;
+    }
  
     u32 idxA=0u;
     u32 idxB=0u;
@@ -1040,7 +1091,6 @@ SVTL_API void* SVTL_findCentroid2D_ThreadSegment(void* __args)
 
 SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfoReadOnly* vi, errno_t* err)
 {
-    
     struct SVTL_F64Vec2 retV = {0,0};
     
     DBG_VALIDATE_INSTANCE_USAGE();
@@ -1086,8 +1136,13 @@ SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfoRea
         area+=areaList[i];
     }
 
-    retV.x = retV.x/area;
-    retV.y = retV.y/area;
+    if (vi->topologyType==SVTL_TOPOLOGY_TYPE_POINT_LIST) {
+        retV.x = retV.x/(area*6.0);
+        retV.y = retV.y/(area*6.0);
+    } else {
+        retV.x = retV.x/area;
+        retV.y = retV.y/area;
+    }
 
     free(dataList);
     free(taskHandles);

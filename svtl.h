@@ -97,7 +97,8 @@ enum SVTL_TopologyType
 {
     SVTL_TOPOLOGY_TYPE_TRIANGLE_LIST,
     SVTL_TOPOLOGY_TYPE_TRIANGLE_STRIP,
-    SVTL_TOPOLOGY_TYPE_TRIANGLE_FAN
+    SVTL_TOPOLOGY_TYPE_TRIANGLE_FAN,
+    SVTL_TOPOLOGY_TYPE_POINT_LIST
 };
 
 struct SVTL_VertexInfo
@@ -202,7 +203,8 @@ SVTL_API errno_t SVTL_mirror2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64
 /// @param SVTL_VertexInfo* vi - vertex info
 /// @param void* verticesOut - a buffer to hold the new list of vertices. It must have a size of vertexCountOut * vi.stride
 /// @param void* indicesOut - a buffer to hold the list of indices. It must have a size of indexCountOut * sizeof(u32)
-/// @param uint32_t* vertexCountOut - the count of the new list of vertices*/
+/// @param uint32_t* vertexCountOut - the count of the new list of vertices
+/// @return errno_t - error code: 0 on success, -1 upon failure */
 SVTL_API errno_t SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly* vi, void* verticesOut, uint32_t* vertexCountOut, uint32_t* indicesOut, uint32_t* indexCountOut);
 
 /*
