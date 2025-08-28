@@ -82,6 +82,7 @@ namespace svtl
         enum INDEX_TYPE indexType;
         enum TOPOLOGY_TYPE topologyType;
         uint32_t positionOffset;
+        bool primitiveRestartEnabled;
     };
     
     struct VertexInfoReadOnly
@@ -94,6 +95,7 @@ namespace svtl
         enum INDEX_TYPE indexType;
         enum TOPOLOGY_TYPE topologyType;
         uint32_t positionOffset;
+        bool primitiveRestartEnabled;
     };
 
     /*
@@ -172,7 +174,7 @@ namespace svtl
     /// @return errno_t - error code: 0 on success, -1 upon failure */
     inline errno_t unindexedToIndexed2D(const struct VertexInfoReadOnly* vi, void* verticesOut, uint32_t* vertexCountOut, uint32_t* indicesOut, uint32_t* indexCountOut)
     {
-       return unindexedToIndexed2D(vi, verticesOut, vertexCountOut, indicesOut, indexCountOut);
+       return SVTL_unindexedToIndexed2D((const SVTL_VertexInfoReadOnly*)vi, verticesOut, vertexCountOut, indicesOut, indexCountOut);
     }
 
     /*
