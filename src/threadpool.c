@@ -271,6 +271,7 @@ THREAD_POOL_API errno_t ThreadPool_New(ThreadPoolHandle* th, u32 timeoutMS)
         return -1;
     }
 
+
     u32 i;
     for (i = 0; i < th->threadCount; ++i)
     {
@@ -320,7 +321,7 @@ THREAD_POOL_API errno_t ThreadPool_New(ThreadPoolHandle* th, u32 timeoutMS)
             return res;
         };
     }
-    
+
     if (unpauseAllPoolsInRange(0,prevPoolCount)) {
         return -1; }
     return 0;

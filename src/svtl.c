@@ -84,7 +84,9 @@ SVTL_API void setTaskHandleSize(u16 size) {
 
 static void DBG_VALIDATE_INSTANCE_USAGE() {
     #ifndef NDEBUG
-       //if 
+       if (launchTask==NULL || joinTask==NULL) {
+            assert(00&&"launchTask & joinTask must be valid function pointers");
+       }
     #endif
 }
 
@@ -857,11 +859,182 @@ SVTL_API f64 SVTL_findSignedArea(const struct SVTL_VertexInfoReadOnly* vi, errno
 struct SVTL_findCentroid2D_Args
 {
     const struct SVTL_VertexInfoReadOnly* vi;
-    u32 firstVertexIndex; u32 vertexCount;
+    u32 firstIndex; u32 count;
+    f64* areaOut;
+    struct SVTL_F64Vec2* centroidSumOut;
 };
 
 SVTL_API void* SVTL_findCentroid2D_ThreadSegment(void* __args)
 {
+    struct SVTL_findCentroid2D_Args* args = __args;
+    const struct SVTL_VertexInfoReadOnly* vi = args->vi;
+    u32 firstIndex = args->firstIndex;
+    u32 count = args->count;
+    u32 i;
+    const u32 end = firstIndex + count;
+
+ 
+    u32 idxA=0u;
+    u32 idxB=0u;
+    u32 idxC=0u;
+    if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_FAN)
+    {
+        if (vi->indices != NULL) 
+        {
+            if (vi->indexType == SVTL_INDEX_TYPE_U16)
+            {
+                idxA = *(u16*)vi->indices;
+            }
+             else {
+                idxA = *(u32*)vi->indices; 
+            }
+        }
+    } else if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_STRIP)
+    {
+        if (firstIndex < 2) {
+            firstIndex = 2;
+        }
+    }
+
+    for (i = firstIndex; i < end;)
+    {
+        if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_LIST)
+        { 
+           
+            if (vi->indices != NULL) 
+            {
+                if (vi->indexType == SVTL_INDEX_TYPE_U16) {
+                    idxA = *((u16*)vi->indices + i);
+                    idxB = *((u16*)vi->indices + (i + 1));
+                    idxC = *((u16*)vi->indices + (i + 2));
+
+                    if (vi->primitiveRestartEnabled) {
+                        if (idxA == 0xFFFF) {
+                            i++;
+                            continue;
+                        }
+                    }
+                } else {
+                    idxA = *((u32*)vi->indices + i);
+                    idxB = *((u32*)vi->indices + (i + 1));
+                    idxC = *((u32*)vi->indices + (i + 2));
+
+                    if (vi->primitiveRestartEnabled) {
+                        if (idxA == 0xFFFFFFFF) {
+                            i++;
+                            continue;
+                        }
+                    }
+                }
+
+               
+            } else {
+                idxA = i;
+                idxB = i+1;
+                idxC = i+2;
+            }
+        }
+        else if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_STRIP)
+        {
+            if (vi->indices !=NULL)
+            {
+                if (vi->indexType==SVTL_INDEX_TYPE_U16)
+                {
+                    idxC = *((u16*)vi->indices + i - 2);
+                    idxB = *((u16*)vi->indices + i - 1);
+                    idxA = *((u16*)vi->indices + i);
+                } else {
+                    idxC = *((u32*)vi->indices + i - 2);
+                    idxB = *((u32*)vi->indices + i - 1);
+                    idxA = *((u32*)vi->indices + i);
+                }
+            } else {
+                idxC = i-2;
+                idxB = i-1;
+                idxA = i;
+            }
+        } 
+        else if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_FAN)
+        {
+            if (vi->indices != NULL) 
+            {
+                if (vi->indexType == SVTL_INDEX_TYPE_U16)
+                {
+                    idxB = *((u16*)vi->indices + i);
+                    idxC = *((u16*)vi->indices + i + 1);
+
+                    if (vi->primitiveRestartEnabled) {
+                        if (idxB == 0xFFFF) {
+                            i++;
+                            continue;
+                        }
+                    }
+                } 
+                else {
+                    idxB = *((u32*)vi->indices + i);
+                    idxC = *((u32*)vi->indices + i + 1);
+
+                    if (vi->primitiveRestartEnabled) {
+                        if (idxC == 0xFFFFFFFF) {
+                            i++;
+                            continue;
+                        }
+                    }  
+                }
+            }
+            else {
+                idxB = i;
+                idxC = i+1;
+            }
+        }
+
+        if (vi->positionType == SVTL_POS_TYPE_VEC2_F32)
+        {
+            struct SVTL_F32Vec2* posA = (struct SVTL_F32Vec2*)((u8*)vi->vertices + (vi->stride * idxA) + vi->positionOffset);
+            struct SVTL_F32Vec2* posB = (struct SVTL_F32Vec2*)((u8*)vi->vertices + (vi->stride * idxB) + vi->positionOffset);
+            struct SVTL_F32Vec2* posC = (struct SVTL_F32Vec2*)((u8*)vi->vertices + (vi->stride * idxC) + vi->positionOffset);
+
+            /*www.omnicalculator.com/math/area-triangle-coordinates*/
+            f64 a = fabs(0.5 * (posA->x * (posB->y - posC->y) + posB->x * (posC->y - posA->y) + posC->x * (posA->y - posB->y)));
+            struct SVTL_F64Vec3 c={0,0};
+            c.x = a * (posA->x+posB->x+posC->x)/3.0;
+            c.y = a * (posA->y+posB->y+posC->y)/3.0;
+
+            *(args->areaOut) += a;
+            args->centroidSumOut->x += c.x;
+            args->centroidSumOut->y += c.y;
+        }
+        else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
+        {
+            struct SVTL_F64Vec2* posA = (struct SVTL_F64Vec2*)((u8*)vi->vertices + (vi->stride * idxA) + vi->positionOffset);
+            struct SVTL_F64Vec2* posB = (struct SVTL_F64Vec2*)((u8*)vi->vertices + (vi->stride * idxB) + vi->positionOffset);
+            struct SVTL_F64Vec2* posC = (struct SVTL_F64Vec2*)((u8*)vi->vertices + (vi->stride * idxC) + vi->positionOffset);
+
+            /*www.omnicalculator.com/math/area-triangle-coordinates*/
+            f64 a = fabs(0.5 * (posA->x * (posB->y - posC->y) + posB->x * (posC->y - posA->y) + posC->x * (posA->y - posB->y)));
+            struct SVTL_F64Vec3 c={0,0};
+            c.x = a * (posA->x+posB->x+posC->x)/3.0;
+            c.y = a * (posA->y+posB->y+posC->y)/3.0;
+
+            *(args->areaOut) += a;
+            args->centroidSumOut->x += c.x;
+            args->centroidSumOut->y += c.y;
+        }
+
+        if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_LIST)
+        {
+            i+=3;
+        } else if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_STRIP)
+        {
+            i++;
+        } else if (vi->topologyType == SVTL_TOPOLOGY_TYPE_TRIANGLE_FAN)
+        {
+            i++;
+        } else {
+            break;
+        }
+    }
+
     return NULL;
 }
 
@@ -872,8 +1045,11 @@ SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfoRea
     
     DBG_VALIDATE_INSTANCE_USAGE();
 
-    struct SVTL_findSignedArea_Args* dataList = malloc(sizeof(struct SVTL_findSignedArea_Args) * TASK_COUNT);
+    struct SVTL_findCentroid2D_Args* dataList = malloc(sizeof(dataList[0]) * TASK_COUNT);
     SVTL_TaskHandle* taskHandles = malloc(taskHandleSize * TASK_COUNT);
+    f64* areaList = calloc(TASK_COUNT,sizeof(areaList[0]));
+    struct SVTL_F64Vec2* centroidSumList = calloc(TASK_COUNT,sizeof(centroidSumList[0]));
+
     if (!dataList || !taskHandles) {
         if (err)
             *err = -1;
@@ -884,22 +1060,39 @@ SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfoRea
     for (i = 0; i < TASK_COUNT; ++i)
     {
         SVTL_Task task;
-        struct SVTL_findSignedArea_Args* fData = &dataList[i];
+        struct SVTL_findCentroid2D_Args* fData = &dataList[i];
         fData->vi = vi;
-        /*fData->firstVertexIndex = i * (vi->count + 1) / instance.threadCount;
-        fData->vertexCount = getSegmentSize(vi->count, instance.threadCount, i);
-        fData->vertexCount;*/
+        fData->firstIndex =  getSegmentSizeGrouped(vi->count, 3, TASK_COUNT, 0)*i;
+        fData->count = getSegmentSizeGrouped(vi->count, 3, TASK_COUNT, i);
+        fData->areaOut = areaList + i;
+        fData->centroidSumOut = centroidSumList + i;
         task.args = fData;
-        task.func = SVTL_skew2D_ThreadSegment;
-        launchTask(task, taskHandles+i);
+        task.func = SVTL_findCentroid2D_ThreadSegment;
+        if (launchTask(task, taskHandles+i)) {
+            if (err) {
+                *err=-1;
+            }
+        }
     }
 
     for (i = 0; i < TASK_COUNT; ++i) {
        joinTask(taskHandles+i);
     }
 
+    f64 area=0;
+    for (i = 0; i < TASK_COUNT; ++i) {
+        retV.x+=centroidSumList[i].x;
+        retV.y+=centroidSumList[i].y;
+        area+=areaList[i];
+    }
+
+    retV.x = retV.x/area;
+    retV.y = retV.y/area;
+
     free(dataList);
     free(taskHandles);
+    free(centroidSumList);
+    free(areaList);
 
     if (err)
         *err=0;
@@ -907,18 +1100,11 @@ SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfoRea
     return retV;
 }
 
-struct SVTL_ExtractVertexPositions2D_Args {
-    const struct SVTL_VertexInfoReadOnly* vi; struct SVTL_F64Vec2* positionsOut; u32 firstVertexIndex; u32 vertexCount;
-};
-
-SVTL_API void* SVTL_ExtractVertexPositions2D_ThreadSegment(void* args__) 
+SVTL_API errno_t SVTL_extractVertexPositions2D(const struct SVTL_VertexInfoReadOnly* vi, struct SVTL_F64Vec2* positionsOut)
 {
     DBG_VALIDATE_INSTANCE_USAGE();
 
-    struct SVTL_ExtractVertexPositions2D_Args* args = args__;
-    const struct SVTL_VertexInfoReadOnly* vi = args->vi;
     const void* vertices = vi->vertices;
-    struct SVTL_F64Vec2* positionsOut = args->positionsOut;
 
     u32 i = 0;
     if (vi->positionType == SVTL_POS_TYPE_VEC2_F32) 
@@ -927,7 +1113,7 @@ SVTL_API void* SVTL_ExtractVertexPositions2D_ThreadSegment(void* args__)
         {
             struct SVTL_F32Vec2* pos = (struct SVTL_F32Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
             positionsOut[i].x = pos->x;
-            positionsOut[i].x = pos->y;
+            positionsOut[i].y = pos->y;
         }
     }
     else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
@@ -936,44 +1122,10 @@ SVTL_API void* SVTL_ExtractVertexPositions2D_ThreadSegment(void* args__)
         {
             struct SVTL_F64Vec2* pos = (struct SVTL_F64Vec2*)((u8*)vertices + (vi->stride * i + vi->positionOffset));
             positionsOut[i].x = pos->x;
-            positionsOut[i].x = pos->y;
+            positionsOut[i].y = pos->y;
         }
     }
 
-    return NULL;
-}
-
-SVTL_API errno_t SVTL_extractVertexPositions2D(const struct SVTL_VertexInfoReadOnly* vi, struct SVTL_F64Vec2* positionsOut)
-{
-    DBG_VALIDATE_INSTANCE_USAGE();
-
-    struct SVTL_ExtractVertexPositions2D_Args* dataList = malloc(sizeof(struct SVTL_ExtractVertexPositions2D_Args) * TASK_COUNT);
-    SVTL_TaskHandle* taskHandles = malloc(taskHandleSize * TASK_COUNT);
-    if (!dataList || !taskHandles) {
-        return -1;
-    }
-
-    u8 i;
-    for (i = 0; i < TASK_COUNT; ++i)
-    {
-        SVTL_Task task;
-        struct SVTL_ExtractVertexPositions2D_Args* fData = &dataList[i];
-        fData->vi = vi;
-        fData->positionsOut = positionsOut;
-        fData->firstVertexIndex = i * (vi->count + 1) / TASK_COUNT;
-        fData->vertexCount = getSegmentSize(vi->count, TASK_COUNT, i);
-        task.args = fData;
-        task.func = SVTL_skew2D_ThreadSegment;
-        launchTask(task, taskHandles+i);
-    }
-
-    for (i = 0; i < TASK_COUNT; ++i)
-    {
-        joinTask(taskHandles+i);
-    }
-
-    free(dataList);
-    free(taskHandles);
     return 0;
 }
 
