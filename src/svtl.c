@@ -1136,12 +1136,18 @@ SVTL_API struct SVTL_F64Vec2 SVTL_findCentroid2D(const struct SVTL_VertexInfoRea
         area+=areaList[i];
     }
 
-    if (vi->topologyType==SVTL_TOPOLOGY_TYPE_POINT_LIST) {
-        retV.x = retV.x/(area*6.0);
-        retV.y = retV.y/(area*6.0);
+    if (area==0) {
+        if (err) {
+            *err = -1;
+        }
     } else {
-        retV.x = retV.x/area;
-        retV.y = retV.y/area;
+        if (vi->topologyType==SVTL_TOPOLOGY_TYPE_POINT_LIST) {
+            retV.x = retV.x/(area*6.0);
+            retV.y = retV.y/(area*6.0);
+        } else {
+            retV.x = retV.x/area;
+            retV.y = retV.y/area;
+        }
     }
 
     free(dataList);
