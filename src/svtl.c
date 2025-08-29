@@ -539,28 +539,71 @@ SVTL_API errno_t SVTL_mirror2D(const struct SVTL_VertexInfo* vi, struct SVTL_F64
     return 0;
 }
 
-struct vertexHashmapPair
+typedef struct
 {
-    struct SVTL_F64Vec2 pos;
     const void* vertex;
     u32 vIndex;
-};
+    u16 vertexSize;
+} vertexHashmapPair;
 
 
 uint64_t vpair_hash(const void *item, uint64_t seed0, uint64_t seed1) 
 {
-    const struct vertexHashmapPair *pair = item;
-    return hashmap_sip(&pair->pos, sizeof(pair->pos), seed0, seed1);
+    const vertexHashmapPair *pair = item;
+    return hashmap_sip(pair->vertex, pair->vertexSize, seed0, seed1);
 }
 
 
 int vpair_compare(const void *a, const void *b, void *udata) {
-    const struct vertexHashmapPair *pairA = a;
-    const struct vertexHashmapPair *pairB = b;
+    const vertexHashmapPair *pairA = a;
+    const vertexHashmapPair *pairB = b;
     
-    return memcmp(&pairA->pos, &pairB->pos, sizeof(pairA->pos));
+    return memcmp(pairA->vertex, pairB->vertex, sizeof(pairA->vertexSize));
 }
 
+SVTL_API errno_t SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly* vi, void* verticesOut, uint32_t* vertexCountOut, uint32_t* indicesOut, uint32_t* indexCountOut)
+{
+    struct hashmap* map = hashmap_new(sizeof(vertexHashmapPair), 0, 0, 0, vpair_hash, vpair_compare, NULL, NULL);
+    if (!map)
+        return -1;
+
+
+    const u32 vertexCount = vi->count;
+    if (indexCountOut)
+        *indexCountOut = vertexCount;
+
+    u32 indexedVertexCount = 0;
+    u32 i;
+    for (i = 0; i < vertexCount; ++i)
+    {
+        const u8* vertex = (u8*)vi->vertices + vi->stride * i;
+        
+        u32 idx;
+        const vertexHashmapPair* pairPtr = hashmap_get(map, &(vertexHashmapPair){.vertex = vertex, .vertexSize = vi->stride});
+        if (pairPtr) {
+            const vertexHashmapPair pair = *pairPtr;
+            idx = pair.vIndex;
+        }
+        else {
+            idx = indexedVertexCount;
+           
+            if (verticesOut) {
+                memcpy((u8*)verticesOut + (vi->stride * idx), vertex, vi->stride); }
+            indexedVertexCount++;
+            hashmap_set(map, &(vertexHashmapPair){.vIndex = idx, .vertex = vertex, .vertexSize = vi->stride });
+        }
+
+        if (indicesOut) {
+            indicesOut[i] = idx; }
+    }
+    if (vertexCountOut)
+        *vertexCountOut = indexedVertexCount;
+   
+
+    hashmap_free(map);
+    return 0;
+}
+/*
 SVTL_API errno_t SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly* vi, void* verticesOut, uint32_t* vertexCountOut, uint32_t* indicesOut, uint32_t* indexCountOut)
 {
     struct hashmap* map = hashmap_new(sizeof(struct vertexHashmapPair), 0, 0, 0, vpair_hash, vpair_compare, NULL, NULL);
@@ -568,69 +611,90 @@ SVTL_API errno_t SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly*
         return -1;
 
     u32 i; 
+    u32 vidx = 0;
     for (i = 0; i < vi->count; ++i)
     {
         const u8* vertex = (u8*)vi->vertices + vi->stride * i;
         if (vi->positionType == SVTL_POS_TYPE_VEC2_F32) 
         {
             const struct SVTL_F32Vec2* pos = (const struct SVTL_F32Vec2*)( (const u8*)vertex + vi->positionOffset );
-            hashmap_set(map, &(struct vertexHashmapPair){.pos={pos->x,pos->y}, .vertex = vertex, .vIndex = i});
+            if (hashmap_get(map, &(struct vertexHashmapPair){.pos={pos->x,pos->y}, .vertex = vertex, .vIndex = vidx})==NULL) {
+                hashmap_set(map, &(struct vertexHashmapPair){.pos={pos->x,pos->y}, .vertex = vertex, .vIndex = vidx});
+                vidx++;
+            }
         }
         else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
         {
             const struct SVTL_F64Vec2* pos =  (const struct SVTL_F64Vec2*)( (const u8*)vertex + vi->positionOffset );
-            hashmap_set(map, &(struct vertexHashmapPair){.pos={pos->x,pos->y}, .vertex = vertex, .vIndex = i});
+            if (hashmap_get(map, &(struct vertexHashmapPair){.pos={pos->x,pos->y}, .vertex = vertex, .vIndex = vidx})==NULL) {
+                hashmap_set(map, &(struct vertexHashmapPair){.pos={pos->x,pos->y}, .vertex = vertex, .vIndex = vidx});
+                vidx++;
+            }
         }
     }
 
-    if (hashmap_count(map) >UINT32_MAX-64) 
-    {
+    if (hashmap_count(map) > UINT32_MAX-64)  {
         hashmap_free(map);
         return -1;
     }
 
+    if (vertexCountOut)
+        *vertexCountOut = (u32)hashmap_count(map);
+
+    u32 i_idx_max=0u;
     i=0;
     size_t iter = 0; // (iter does not correspond to a deduplicated index)
     void *item;
     while (hashmap_iter(map, &iter, &item)) {
         struct vertexHashmapPair *pair = item;
-        
+        if (pair->vIndex>i_idx_max) {
+            i_idx_max=pair->vIndex;
+        }
         if (verticesOut) {
-            memcpy((u8*)verticesOut + (pair->vIndex*vi->stride), pair->vertex, vi->stride);
+        #ifndef NDEBUG
+            if (i >= *vertexCountOut) {
+                assert(00 && "BAD"); }
+        #endif // !NDEBUG
+            memcpy((u8*)verticesOut + (i*vi->stride), pair->vertex, vi->stride);
         }
         i++;
     }
 
-    if (vertexCountOut)
-        *vertexCountOut = i;
 
-    if (indexCountOut)
-        *indexCountOut = vi->count;
+    if (indexCountOut) {
+        *indexCountOut = (i_idx_max + 1);}
     
-    for (i = 0; i < vi->count; ++i)
-    {
-        const u8* vertex = (u8*)vi->vertices + vi->stride * i;
-          if (vi->positionType == SVTL_POS_TYPE_VEC2_F32) 
+    if (indicesOut) {
+
+        for (i = 0; i < (i_idx_max + 1); ++i)
         {
-            const struct SVTL_F32Vec2* pos = (const struct SVTL_F32Vec2*)( (const u8*)vertex + vi->positionOffset );
-            const struct vertexHashmapPair *pair = hashmap_get(map, &(struct vertexHashmapPair){.pos = {pos->x,pos->y}});
-            if (indicesOut) {
+            const u8* vertex = (u8*)vi->vertices + vi->stride * i;
+            if (vi->positionType == SVTL_POS_TYPE_VEC2_F32)
+            {
+                const struct SVTL_F32Vec2* pos = (const struct SVTL_F32Vec2*)((const u8*)vertex + vi->positionOffset);
+                const struct vertexHashmapPair* pair = hashmap_get(map, &(struct vertexHashmapPair){.pos = { pos->x,pos->y }});
+            #ifndef NDEBUG
+                if (i >= (i_idx_max + 1)) {
+                    assert(00 && "BAD"); }
+            #endif
                 *(indicesOut + i) = pair->vIndex;
             }
-        }
-        else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
-        {
-            const struct SVTL_F64Vec2* pos =  (const struct SVTL_F64Vec2*)( (const u8*)vertex + vi->positionOffset );
-            const struct vertexHashmapPair *pair = hashmap_get(map, &(struct vertexHashmapPair){.pos = {pos->x,pos->y}});
-            if (indicesOut) {
+            else if (vi->positionType == SVTL_POS_TYPE_VEC2_F64)
+            {
+                const struct SVTL_F64Vec2* pos = (const struct SVTL_F64Vec2*)((const u8*)vertex + vi->positionOffset);
+                const struct vertexHashmapPair* pair = hashmap_get(map, &(struct vertexHashmapPair){.pos = { pos->x,pos->y }});
+            #ifndef NDEBUG
+                if (i >= (i_idx_max + 1)) {
+                    assert(00 && "BAD"); }
+            #endif
                 *(indicesOut + i) = pair->vIndex;
             }
         }
     }
-
     hashmap_free(map);
     return 0;
 }
+*/
 
 struct SVTL_findSignedArea_Args
 {
