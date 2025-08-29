@@ -603,6 +603,7 @@ SVTL_API errno_t SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly*
     hashmap_free(map);
     return 0;
 }
+
 /*
 SVTL_API errno_t SVTL_unindexedToIndexed2D(const struct SVTL_VertexInfoReadOnly* vi, void* verticesOut, uint32_t* vertexCountOut, uint32_t* indicesOut, uint32_t* indexCountOut)
 {
