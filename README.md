@@ -33,7 +33,7 @@ struct Vertex2D {
 
 int main()
 {
-	SVTL_Init();
+	SVTL_register();
 
 	struct Vertex2D vertices[4] = { {0,0}, {1,0}, {1,1}, {0,1} };
 
@@ -43,6 +43,7 @@ int main()
 	vi.positionOffset = 0u;
 	vi.positionType = SVTL_POS_TYPE_VEC2_F32;
 	vi.vertices = vertices;
+	vi.indices=NULL;
 
 	struct SVTL_F64Vec2 v = { 0, 1 };
 	struct SVTL_F64Vec2 v2 = { 0, 1 };
@@ -69,9 +70,7 @@ int main()
 	v2.y = 3.f;
 	SVTL_skew2D(&vi, v, v2);
 	
-	struct SVTL_F64Vec2 vc = SVTL_findCentroid2D(&vi);
-
-	SVTL_Terminate();
+	SVTL_unregister();
 }
 ```
 
